@@ -2,6 +2,9 @@ output/
 augraphy_cache/
 augmentation_images/
 logs/
+*.glif
+*.plist
+*.fea
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
