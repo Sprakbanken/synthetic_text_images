@@ -10,6 +10,7 @@ dependencies = [
     "fonttools>=4.53.1",
     "pandas>=2.2.2",
     "augraphy>=8.2.6",
+    "opencv-python>=4.10.0.84",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
@@ -22,3 +23,17 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ruff>=0.6.3",
+]
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["I", "TCH"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["synthetic_text_images"]
