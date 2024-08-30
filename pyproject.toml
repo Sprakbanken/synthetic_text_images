@@ -1,0 +1,24 @@
+[project]
+name = "text_generation"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Marie Roald", email = "roald.marie@gmail.com"},
+]
+dependencies = [
+    "pillow>=10.4.0",
+    "fonttools>=4.53.1",
+    "pandas>=2.2.2",
+    "augraphy>=8.2.6",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
