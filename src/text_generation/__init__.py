@@ -20,24 +20,15 @@ def check_font_support(text: str, font_path: Path) -> bool:
             return False
     return True
 
-
-def create_image_with_text(
+def get_bounding_box_and_image_size(
     text: str,
-    font_path: Path,
-    font_size: int,
-    color_pair: tuple[tuple[int, int, int], tuple[int, int, int]],
+    font: ImageFont.FreeTypeFont,
     top_margin: int,
     bottom_margin: int,
     left_margin: int,
     right_margin: int,
-    output_path: Path,
 ) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
-    """Create an image with text using a specific font, font size, color, backgroundcolor and margins."""
-    # Create a font object
-    font = ImageFont.truetype(font_path, font_size)
-
-    # Define text and background colors
-    text_color, background_color = color_pair
+    """Get the bounding box and image size of a text with a specific font, font size and margins."""
 
     # Calculate text size
     (left, top, right, bottom) = font.getbbox(text)
@@ -47,17 +38,37 @@ def create_image_with_text(
     # Calculate image size with margins
     image_width = text_width + left_margin + right_margin
     image_height = text_height + top_margin + bottom_margin
+    return (left, top, right, bottom), (image_width, image_height)
+
+
+
+def create_image_with_text(
+    text: str,
+    font: ImageFont.FreeTypeFont,
+    color_pair: tuple[tuple[int, int, int], tuple[int, int, int]],
+    top_margin: int,
+    bottom_margin: int,
+    left_margin: int,
+    right_margin: int,
+    output_path: Path,
+) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
+    """Create an image with text using a specific font, font size, color, backgroundcolor and margins."""
+    # Create a font object
+
+    # Define text and background colors
+    text_color, background_color = color_pair
+
+    # Get the bounding box and image size
+    (left, top, right, bottom), (image_width, image_height) = get_bounding_box_and_image_size(
+        text, font, top_margin, bottom_margin, left_margin, right_margin
+    )
 
     # Create a new image with white background
     image = Image.new("RGB", (image_width, image_height), background_color)
     draw = ImageDraw.Draw(image)
 
-    # Calculate text position
-    text_x = left_margin
-    text_y = top_margin
-
     # Draw the text on the image
-    draw.text((text_x, text_y), text, font=font, fill=text_color)
+    draw.text((left_margin, top_margin), text, font=font, fill=text_color)
 
     # Save the image
     image.save(output_path)
@@ -77,8 +88,7 @@ def create_random_light_color(rng: random.Random) -> tuple[int, int, int]:
 def create_datafiles(
     text_lines: Generator[str, None, None],
     output_dir: Path,
-    font_paths: Sequence[Path],
-    font_sizes: Sequence[int],
+    fonts: Sequence[ImageFont.FreeTypeFont],
     color_pairs: Sequence[tuple[tuple[int, int, int], tuple[int, int, int]]],
     top_margins: Sequence[int],
     bottom_margins: Sequence[int],
@@ -91,11 +101,7 @@ def create_datafiles(
     for id_, line in enumerate(text_lines):
         unique_id = uuid.uuid4()
 
-        font_path = rng.choice(font_paths)
-        if not check_font_support(line, font_path):
-            raise ValueError(f"Font {font_path} does not support text: {line}")
-
-        font_size = rng.choice(font_sizes)
+        font = rng.choice(fonts)
         color_pair = rng.choice(color_pairs)
         top_margin = rng.choice(top_margins)
         bottom_margin = rng.choice(bottom_margins)
@@ -107,8 +113,7 @@ def create_datafiles(
 
         bbox, image_size = create_image_with_text(
             text=line,
-            font_path=font_path,
-            font_size=font_size,
+            font = font,
             color_pair=color_pair,
             top_margin=top_margin,
             bottom_margin=bottom_margin,
@@ -120,8 +125,8 @@ def create_datafiles(
             {
                 "unique_id": unique_id,
                 "text": line,
-                "font_path": font_path,
-                "font_size": font_size,
+                "font_path": font.path,
+                "font_size": font.size,
                 "text_color": color_pair[0],
                 "background_color": color_pair[1],
                 "top_margin": top_margin,

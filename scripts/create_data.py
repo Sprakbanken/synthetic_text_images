@@ -1,6 +1,8 @@
 import random
 from pathlib import Path
 
+from PIL import ImageFont
+
 from text_generation import create_datafiles, create_random_dark_color, create_random_light_color
 
 if __name__ == "__main__":
@@ -29,11 +31,12 @@ if __name__ == "__main__":
     right_margins = [10, 20]
 
     rng = random.Random(42)
+
+    fonts = [ImageFont.truetype(font_path, rng.choice(font_sizes)) for font_path in font_paths]
     create_datafiles(
         text_lines=text_lines,
         output_dir=output_dir,
-        font_paths=font_paths,
-        font_sizes=font_sizes,
+        fonts=fonts,
         color_pairs=color_pairs,
         top_margins=top_margins,
         bottom_margins=bottom_margins,
