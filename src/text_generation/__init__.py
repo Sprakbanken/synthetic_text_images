@@ -38,7 +38,10 @@ def get_bounding_box_and_image_size(
     # Calculate image size with margins
     image_width = text_width + left_margin + right_margin
     image_height = text_height + top_margin + bottom_margin
-    return (left, top, right, bottom), (image_width, image_height)
+
+    # Set bounding box coordinates with margins
+    bbox = (left + left_margin, top + top_margin, right + left_margin, bottom + top_margin)
+    return bbox, (image_width, image_height)
 
 
 

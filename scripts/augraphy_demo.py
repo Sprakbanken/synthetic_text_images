@@ -19,7 +19,10 @@ cv2.putText(
     0,
     3,
 )
-image_path = "output/images/b0188314-29a1-4ea2-ab31-adfe0f38b74a.png"
+image_path = "scripts/output/images/4d4bbec8-9cfa-4e96-a5ff-b9fbcbf97ff3.png"
+# image_path = "output/images/b0188314-29a1-4ea2-ab31-adfe0f38b74a.png"
 image = cv2.imread(image_path)
 
-augmented_image = pipeline.augment(image)["output"]
+result = pipeline.augment(image)
+augmented_image = result["output"]
+breakpoint()

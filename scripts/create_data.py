@@ -15,11 +15,9 @@ if __name__ == "__main__":
 
     font_sizes = [16, 40]
     rng = random.Random(42)
-    # light mode has dark text (fist in the tuple) and light background (second in the tuple)
     light_mode_color_pairs = [
         (create_random_dark_color(rng), create_random_light_color(rng)) for _ in range(10)
     ]
-    # dark mode has light text (fist in the tuple) and dark background (second in the tuple)
     dark_mode_color_pairs = [
         (create_random_light_color(rng), create_random_dark_color(rng)) for _ in range(10)
     ]
