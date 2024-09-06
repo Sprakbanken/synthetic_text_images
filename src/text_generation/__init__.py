@@ -3,11 +3,25 @@ import uuid
 from pathlib import Path
 from typing import Generator, Sequence
 
-import cv2
+import augraphy.augmentations as augmentations
 import numpy as np
 import pandas as pd
+from augraphy import AugraphyPipeline
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageColor, ImageDraw, ImageFont
+
+
+def create_pipeline_from_log(log):
+    ink_phase = []
+    paper_phase = []
+    post_phase = []
+    for i, (augmentation_name, augmentation_status, augmentation_parameters) in enumerate(
+        zip(log["augmentation_name"], log["augmentation_status"], log["augmentation_parameters"])
+    ):
+        if augmentation_status:
+            augmentation_type = getattr(augmentations, augmentation_name)
+            post_phase.append(augmentation_type(**augmentation_parameters))
+    return AugraphyPipeline(ink_phase=ink_phase, paper_phase=paper_phase, post_phase=post_phase)
 
 
 def check_font_support(text: str, font_path: Path) -> bool:
@@ -53,8 +67,7 @@ def create_image_with_text(
     bottom_margin: int,
     left_margin: int,
     right_margin: int,
-    output_path: Path,
-) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
+) -> tuple[Image.Image, tuple[int, int, int, int]]:
     """Create an image with text using a specific font, font size, color, backgroundcolor and margins."""
     # Create a font object
 
@@ -73,9 +86,7 @@ def create_image_with_text(
     # Draw the text on the image
     draw.text((left_margin, top_margin), text, font=font, fill=text_color)
 
-    # Save the image
-    image.save(output_path)
-    return (left, top, right, bottom), (image_width, image_height)
+    return image, (left, top, right, bottom)
 
 
 def create_random_dark_color(rng: random.Random) -> tuple[int, int, int]:
@@ -114,16 +125,21 @@ def create_datafiles(
         image_dir.mkdir(exist_ok=True)
         output_path = image_dir / f"{unique_id}.png"
 
-        bbox, image_size = create_image_with_text(
+        image, bbox = create_image_with_text(
             text=line,
-            font = font,
+            font=font,
             color_pair=color_pair,
             top_margin=top_margin,
             bottom_margin=bottom_margin,
             left_margin=left_margin,
             right_margin=right_margin,
-            output_path=output_path,
         )
+        image_size = image.size
+
+        # Save the image
+        image.save(output_path)
+
+        # Store metadata
         metadata.append(
             {
                 "unique_id": unique_id,
