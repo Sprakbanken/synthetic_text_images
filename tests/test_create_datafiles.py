@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from PIL import Image, ImageChops, ImageFont
 
-from text_generation import create_datafiles, create_image_with_text
+from text_generation.create import create_datafiles, create_line_image
 
 
 @pytest.mark.parametrize(
@@ -133,10 +133,9 @@ def test_image_can_be_reproduced_from_csv_file(tmp_path: Path, ubuntu_sans_font:
     }
     unique_id = series["unique_id"]
 
-    recreated_image, _ = create_image_with_text(**parameter_dict)
+    recreated_image, _ = create_line_image(**parameter_dict)
     original_image = Image.open(output_dir / f"images/{unique_id}.png")
 
     # Check that the images are the same
     assert original_image.size == recreated_image.size
     assert ImageChops.difference(original_image, recreated_image).getbbox() is None
-   

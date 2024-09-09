@@ -1,11 +1,11 @@
 import numpy as np
 from PIL import Image
 
-from text_generation import create_image_with_text
+from text_generation.create import create_line_image
 
 
 def test_image_is_created(ubuntu_sans_font):
-    """When calling create_image_with_text an image file should be created."""
+    """When calling create_line_image an image file should be created."""
 
     text = "Bures boahtin!"
     color_pair = ((0, 0, 0), (255, 255, 255))
@@ -14,7 +14,7 @@ def test_image_is_created(ubuntu_sans_font):
     left_margin = 30
     right_margin = 40
 
-    image, bbox = create_image_with_text(
+    image, bbox = create_line_image(
         text=text,
         font=ubuntu_sans_font,
         color_pair=color_pair,
@@ -41,6 +41,7 @@ def test_image_is_created(ubuntu_sans_font):
     assert width <= right + right_margin
     assert height <= bottom + bottom_margin
 
+
 def test_created_image_is_not_empty(ubuntu_sans_font):
     """The created image should not be empty."""
     text = "Bures boahtin!"
@@ -50,7 +51,7 @@ def test_created_image_is_not_empty(ubuntu_sans_font):
     left_margin = 30
     right_margin = 40
 
-    image, _ = create_image_with_text(
+    image, _ = create_line_image(
         text=text,
         font=ubuntu_sans_font,
         color_pair=color_pair,
