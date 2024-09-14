@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from pathlib import Path
 
-    from text_generation.pipeline import Augmenter, PipelineCreator
+    from text_generation.augraphy_utils import Augmenter, PipelineCreator
 
 BoundingBox = tuple[int, int, int, int]
 
@@ -138,9 +138,9 @@ def distort_line_images(
 
     for idx, row in distorted_metadata.iterrows():
         # Copy the image to the original images directory
-        original_image_path = line_images_dir / row["output_path"]
+        original_image_path = line_images_dir / row["undistorted_file_name"]
 
-        image_path = output_dir / row["output_path"]
+        image_path = output_dir / row["undistorted_file_name"]
         image_path.parent.mkdir(exist_ok=True, parents=True)
         maybe_copy(original_image_path, image_path)
 
@@ -181,4 +181,4 @@ def distort_line_images(
         distorted_metadata.loc[idx, "distorted_bbox_right"] = distorted_bbox[2]
         distorted_metadata.loc[idx, "distorted_bbox_bottom"] = distorted_bbox[3]
 
-    distorted_metadata.drop(columns="output_path").to_csv(output_dir / "metadata.csv", index=False)
+    distorted_metadata.to_csv(output_dir / "metadata.csv", index=False)

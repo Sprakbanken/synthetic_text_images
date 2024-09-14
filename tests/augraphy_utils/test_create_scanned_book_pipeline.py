@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 
-from text_generation.pipeline import Augmenter, create_scanned_book_pipeline
+from text_generation.augraphy_utils import Augmenter, create_scanned_book_pipeline
 
 
 def test_pipeline_is_created(example_line_image):

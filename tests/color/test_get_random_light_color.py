@@ -1,6 +1,6 @@
 import random
 
-from text_generation.create import get_random_light_color
+from text_generation.image_creation import get_random_light_color
 
 
 def test_average_rgb_value_high(rng):

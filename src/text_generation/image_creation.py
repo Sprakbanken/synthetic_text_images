@@ -14,8 +14,8 @@ from text_generation.color import (
     get_random_light_color,
     is_dark_mode,
 )
-from text_generation.image import get_bounding_box_and_image_size
-from text_generation.text_processing import TransformedTextLine
+from text_generation.image_processing import get_bounding_box_and_image_size
+from text_generation.text_processing import TextLineType
 
 
 def create_line_image(
@@ -49,7 +49,7 @@ def create_line_image(
 
 
 def create_line_images(
-    text_lines: Iterable[TransformedTextLine],
+    text_lines: Iterable[TextLineType],
     output_dir: Path,
     fonts: Sequence[ImageFont.FreeTypeFont],
     color_pairs: Sequence[tuple[tuple[int, int, int], tuple[int, int, int]]],
@@ -93,7 +93,7 @@ def create_line_images(
         metadata.append(
             {
                 "unique_id": unique_id,
-                "text": line,
+                "text": line.text,
                 "text_line_id": line.text_line_id,
                 "raw_text": line.raw_text,
                 "text_transform": line.transform,
@@ -111,7 +111,7 @@ def create_line_images(
                 "bbox_bottom": bbox[3],
                 "image_width": image_size[0],
                 "image_height": image_size[1],
-                "output_path": output_path.relative_to(output_dir),
+                "undistorted_file_name": output_path.relative_to(output_dir),
             }
         )
     df = pd.DataFrame(metadata)

@@ -2,9 +2,9 @@ import itertools
 import logging
 import random
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Generator, Unpack
+from typing import Callable, Generator, Protocol
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -13,10 +13,25 @@ logging.basicConfig(level=logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
 
+class TextLineType(Protocol):
+    text: str
+    text_line_id: str
+    raw_text: str
+    transform: str
+
+
 @dataclass
 class TextLine:
     text: str
-    text_line_id: str
+    text_line_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+
+    @property
+    def raw_text(self) -> str:
+        return self.text
+
+    @property
+    def transform(self) -> str:
+        return "identity"
 
 
 @dataclass

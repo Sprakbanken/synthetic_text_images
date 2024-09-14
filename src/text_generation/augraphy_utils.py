@@ -8,8 +8,12 @@ import numpy as np
 from augraphy import Augmentation, AugraphyPipeline, BleedThrough, augmentations
 
 from text_generation.color import get_random_highlight_color
-from text_generation.image import get_bbox_aware_crop_box
-from text_generation.create import is_dark_mode, get_random_dark_color, get_random_light_color
+from text_generation.image_processing import get_bbox_aware_crop_box
+from text_generation.image_creation import (
+    is_dark_mode,
+    get_random_dark_color,
+    get_random_light_color,
+)
 
 BoundingBox = tuple[int, int, int, int]
 
@@ -143,6 +147,7 @@ class CustomImageBleedThrough(BleedThrough):
         image_bleedthrough_foreground = cv2.flip(image_bleedthrough_foreground, 1)
 
         return image_bleedthrough_foreground
+
 
 def maybe_append(list_: list, item: Any, probability: float, rng: random.Random) -> None:
     """Append an item to a list with a certain probability."""

@@ -1,7 +1,7 @@
 import pytest
 from PIL import ImageFont
 
-from text_generation.image import get_bounding_box_and_image_size
+from text_generation.image_processing import get_bounding_box_and_image_size
 
 
 @pytest.mark.parametrize("text", ["Bures boahtin!", "Velkommen!"])

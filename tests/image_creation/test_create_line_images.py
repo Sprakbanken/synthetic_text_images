@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 from PIL import Image, ImageChops, ImageFont
 
-from text_generation.create import create_line_images, create_line_image
+from text_generation.image_creation import create_line_image, create_line_images
+from text_generation.text_processing import TextLine
 from text_generation.utils import parse_int_tuple
 
 
@@ -23,7 +24,7 @@ def test_one_file_per_line_is_created(tmp_path: Path, text_lines: list[str]):
     right_margins = [40]
     rng = random.Random(42)
     create_line_images(
-        text_lines=text_lines,
+        text_lines=[TextLine(line) for line in text_lines],
         output_dir=tmp_path,
         fonts=fonts,
         color_pairs=color_pairs,
@@ -50,7 +51,7 @@ def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, tex
     right_margins = [40]
     rng = random.Random(42)
     create_line_images(
-        text_lines=text_lines,
+        text_lines=[TextLine(line) for line in text_lines],
         output_dir=tmp_path,
         fonts=fonts,
         color_pairs=color_pairs,
@@ -65,7 +66,7 @@ def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, tex
     df = pd.read_csv(csv_file)
     assert df.shape[0] == len(text_lines)
     columns = df.columns.tolist()
-    expected_columns = [
+    expected_columns = {
         "unique_id",
         "text",
         "font_path",
@@ -82,11 +83,12 @@ def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, tex
         "bbox_bottom",
         "image_width",
         "image_height",
-        "output_path",
-    ]
-    assert len(columns) == len(expected_columns)
-    for column in expected_columns:
-        assert column in columns
+        "undistorted_file_name",
+        "text_line_id",
+        "text_transform",
+        "raw_text",
+    }
+    assert set(columns) == expected_columns
 
 
 def test_image_can_be_reproduced_from_csv_file(
@@ -94,7 +96,7 @@ def test_image_can_be_reproduced_from_csv_file(
 ):
     """It should be possible to reproduce the image from the CSV file."""
 
-    text_lines = ["Bures boahtin!"]
+    text_lines = [TextLine("Bures boahtin!")]
     fonts = [ubuntu_sans_font]
     color_pairs = [((0, 0, 0), (255, 255, 255))]
     top_margins = [10]

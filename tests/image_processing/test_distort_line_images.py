@@ -5,14 +5,16 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from text_generation.create import create_line_images
-from text_generation.image import distort_line_images
-from text_generation.pipeline import create_scanned_book_pipeline
+from text_generation.augraphy_utils import create_scanned_book_pipeline
+from text_generation.image_creation import create_line_images
+from text_generation.image_processing import distort_line_images
+from text_generation.text_processing import TextLine
 
 
 @pytest.fixture
 def example_line_images_directory(tmp_path: Path, ubuntu_sans_font) -> Path:
     lines = ["Boure beaivvi", "God dag", "Mo manná?", "Hvordan går det?"]
+    lines = [TextLine(line) for line in lines]
     output_path = tmp_path / "raw"
     create_line_images(
         text_lines=lines,
@@ -88,8 +90,11 @@ def test_metadata_is_created(example_line_images_directory: Path):
     expected_columns = [
         "unique_id",
         "text",
+        "raw_text",
         "font_path",
         "font_size",
+        "text_line_id",
+        "text_transform",
         "text_color",
         "background_color",
         "top_margin",
@@ -102,12 +107,12 @@ def test_metadata_is_created(example_line_images_directory: Path):
         "bbox_bottom",
         "image_width",
         "image_height",
-        "output_path",
+        "undistorted_file_name",
         "distorted_bbox_left",
         "distorted_bbox_top",
         "distorted_bbox_right",
         "distorted_bbox_bottom",
-        "distorted_output_path",
+        "file_name",
         "augraphy_log_path",
     ]
     assert set(columns) == set(expected_columns)
@@ -126,8 +131,8 @@ def test_metadata_has_functioning_paths(example_line_images_directory: Path):
 
     distorted_metadata = pd.read_csv(output_path / "metadata.csv")
     for idx, row in distorted_metadata.iterrows():
-        assert (output_path / row["output_path"]).exists()
-        assert (output_path / row["distorted_output_path"]).exists()
+        assert (output_path / row["undistorted_file_name"]).exists()
+        assert (output_path / row["file_name"]).exists()
         assert (output_path / row["augraphy_log_path"]).exists()
 
 

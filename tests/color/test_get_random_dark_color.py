@@ -1,6 +1,6 @@
 import random
 
-from text_generation.create import get_random_dark_color
+from text_generation.image_creation import get_random_dark_color
 
 
 def test_average_rgb_value_low(rng):

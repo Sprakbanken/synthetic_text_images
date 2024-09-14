@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageFont
 
-from text_generation.create import create_line_image
+from text_generation.image_creation import create_line_image
 
 
 @pytest.fixture
