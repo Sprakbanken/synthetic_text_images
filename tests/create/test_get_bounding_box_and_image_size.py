@@ -15,12 +15,12 @@ def test_margin_and_bounding_box_and_image_size_adds_up(
     """When adding the margin to the bounding box it should add up with the image size."""
 
     font = ImageFont.load_default()
-    (left, top, right, bottom), (image_width, image_height) = get_bounding_box_and_image_size(
+    (_left, _top, right, bottom), (image_width, image_height) = get_bounding_box_and_image_size(
         text, font, top_margin, bottom_margin, left_margin, right_margin
     )
 
-    assert right - left + left_margin + right_margin == image_width
-    assert bottom - top + top_margin + bottom_margin == image_height
+    assert right + right_margin == image_width
+    assert bottom + bottom_margin == image_height
 
 
 def test_longer_text_has_larger_image_size():

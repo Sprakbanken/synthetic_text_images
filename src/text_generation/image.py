@@ -1,14 +1,21 @@
+from __future__ import annotations
+
 import json
 import random
-from pathlib import Path
 from shutil import copy2
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 
-from text_generation.pipeline import Augmenter
+from text_generation.utils import parse_int_tuple
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+    from pathlib import Path
+
+    from text_generation.pipeline import Augmenter, PipelineCreator
 
 BoundingBox = tuple[int, int, int, int]
 
@@ -29,7 +36,7 @@ def get_bbox_aware_crop_box(
         rng ([type], optional): The random number generator. Defaults to None.
 
     Returns:
-        tuple[int, int, int, int]: The crop box coordinates (top, left, bottom, right).
+        tuple[int, int, int, int]: The crop box coordinates (left, top, right, bottom).
 
     Examples:
         >>> image_size = (100, 100)
@@ -52,14 +59,14 @@ def get_bbox_aware_crop_box(
     if rng is None:
         rng = random.Random()
 
-    bbox_top, bbox_left, bbox_bottom, bbox_right = bounding_box
+    bbox_left, bbox_top, bbox_right, bbox_bottom = bounding_box
 
     crop_top = rng.randint(0, bbox_top - buffer_margin)
     crop_left = rng.randint(0, bbox_left - buffer_margin)
 
     crop_bottom = rng.randint(bbox_bottom + buffer_margin, image_size[1])
     crop_right = rng.randint(bbox_right + buffer_margin, image_size[0])
-    return crop_top, crop_left, crop_bottom, crop_right
+    return crop_left, crop_top, crop_right, crop_bottom
 
 
 def get_bounding_box_and_image_size(
@@ -74,45 +81,51 @@ def get_bounding_box_and_image_size(
 
     # Calculate text size
     (left, top, right, bottom) = font.getbbox(text)
-    text_width = right - left
-    text_height = bottom - top
 
     # Calculate image size with margins
-    image_width = text_width + left_margin + right_margin
-    image_height = text_height + top_margin + bottom_margin
+    image_width = right + left_margin + right_margin
+    image_height = bottom + top_margin + bottom_margin
 
     # Set bounding box coordinates with margins
     bbox = (left + left_margin, top + top_margin, right + left_margin, bottom + top_margin)
     return bbox, (image_width, image_height)
 
 
-
 def distort_line_image(
     image: Image.Image, pipeline: Augmenter
-) -> tuple[Image.Image, tuple[int, int, int, int] | None, dict]:
+) -> tuple[Image.Image, BoundingBox | None, dict]:
     """Distort an image with an AugraphyPipeline."""
     image_array = np.array(image)
     out = pipeline.augment(image_array)
     distorted_image_array = out["output"]
-    if out["bounding_boxes"] is None:
+    if not out["bounding_boxes"]:
         distorted_bbox = None
     else:
         distorted_bbox = out["bounding_boxes"][0]  # Only one line, so only one bounding box
-    log = pipeline.augment(image_array)["log"]
 
-    return Image.fromarray(distorted_image_array), distorted_bbox, log
+    return Image.fromarray(distorted_image_array), distorted_bbox, pipeline.to_dict()
+
+
+def maybe_copy(src: Path, dst: Path) -> None:
+    """Copy the file if ``src`` and ``dst`` are different."""
+    if src.resolve() != dst.resolve():
+        copy2(src, dst)
 
 
 def distort_line_images(
-    metadata: pd.DataFrame,
+    line_images_dir: Path,
     output_dir: Path,
     rng: random.Random,
-    pipeline_creator: Callable[[BoundingBox, random.Random], Augmenter],
+    pipeline_creator: PipelineCreator,
+    distorted_subdir_name: str = "distorted_line_images",
 ) -> None:
     """Distort images and save the results."""
-    original_images_dir = output_dir / "original_images"
+    metadata = pd.read_csv(line_images_dir / "metadata.csv")
+    original_images_dir = line_images_dir / "line_images"
+    if not original_images_dir.exists():
+        raise ValueError(f"Directory {original_images_dir} does not exist.")
 
-    distorted_images_dir = output_dir / "distorted_images"
+    distorted_images_dir = output_dir / distorted_subdir_name
     distorted_images_dir.mkdir(exist_ok=True, parents=True)
 
     logs_dir = output_dir / "augraphy_logs"
@@ -120,16 +133,32 @@ def distort_line_images(
 
     distorted_metadata = metadata.copy()
 
-    for _, row in distorted_metadata.iterrows():
-        image_path = output_dir / row["output_path"]
+    # TODO: should this read from metadata instead?
+    line_image_paths = list(original_images_dir.glob("*.png"))
+
+    for idx, row in distorted_metadata.iterrows():
         # Copy the image to the original images directory
-        original_image_path = original_images_dir / image_path.name
-        copy2(image_path, original_image_path)
+        original_image_path = line_images_dir / row["output_path"]
+
+        image_path = output_dir / row["output_path"]
+        image_path.parent.mkdir(exist_ok=True, parents=True)
+        maybe_copy(original_image_path, image_path)
 
         image = Image.open(image_path)
         bounding_box = (row["bbox_left"], row["bbox_top"], row["bbox_right"], row["bbox_bottom"])
+        background_color = parse_int_tuple(row["background_color"])
+        text_color = parse_int_tuple(row["text_color"])
+        font_size = row["font_size"]
 
-        pipeline = pipeline_creator(bounding_box, rng)
+        pipeline = pipeline_creator(
+            bbox=bounding_box,
+            image_size=image.size,
+            rng=rng,
+            bleed_through_candidates=line_image_paths,
+            text_color=text_color,
+            background_color=background_color,
+            font_size=font_size,
+        )
         distorted_image, distorted_bbox, log = distort_line_image(image, pipeline)
 
         # Save the distorted image
@@ -141,13 +170,15 @@ def distort_line_images(
         with open(log_path, "w") as f:
             json.dump(log, f)
 
-        row["output_path"] = original_image_path.relative_to(output_dir)
-        row["distorted_output_path"] = distorted_image_path.relative_to(output_dir)
-        row["augraphy_log_path"] = log_path.relative_to(output_dir)
+        distorted_metadata.loc[idx, "undistorted_file_name"] = image_path.relative_to(output_dir)
+        distorted_metadata.loc[idx, "file_name"] = distorted_image_path.relative_to(output_dir)
+        distorted_metadata.loc[idx, "augraphy_log_path"] = log_path.relative_to(output_dir)
 
-        row["distorted_bbox_left"] = distorted_bbox[0]
-        row["distorted_bbox_top"] = distorted_bbox[1]
-        row["distorted_bbox_right"] = distorted_bbox[2]
-        row["distorted_bbox_bottom"] = distorted_bbox[3]
+        if distorted_bbox is None:
+            distorted_bbox = [np.nan, np.nan, np.nan, np.nan]
+        distorted_metadata.loc[idx, "distorted_bbox_left"] = distorted_bbox[0]
+        distorted_metadata.loc[idx, "distorted_bbox_top"] = distorted_bbox[1]
+        distorted_metadata.loc[idx, "distorted_bbox_right"] = distorted_bbox[2]
+        distorted_metadata.loc[idx, "distorted_bbox_bottom"] = distorted_bbox[3]
 
-    distorted_metadata.to_csv(output_dir / "metadata.csv", index=False)
+    distorted_metadata.drop(columns="output_path").to_csv(output_dir / "metadata.csv", index=False)

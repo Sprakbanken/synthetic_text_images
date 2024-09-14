@@ -1,9 +1,15 @@
+import random
 from pathlib import Path
 
 import pytest
 from PIL import Image, ImageFont
 
 from text_generation.create import create_line_image
+
+
+@pytest.fixture
+def rng():
+    return random.Random(42)
 
 
 @pytest.fixture

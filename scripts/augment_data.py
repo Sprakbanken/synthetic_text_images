@@ -7,19 +7,6 @@ from augraphy import AugraphyPipeline
 from PIL import Image
 
 
-def create_pipeline_from_log(log):
-    ink_phase = []
-    paper_phase = []
-    post_phase = []
-    for i, (augmentation_name, augmentation_status, augmentation_parameters) in enumerate(
-        zip(log["augmentation_name"], log["augmentation_status"], log["augmentation_parameters"])
-    ):
-        if augmentation_status:
-            augmentation_type = getattr(augmentations, augmentation_name)
-            post_phase.append(augmentation_type(**augmentation_parameters))
-    return AugraphyPipeline(ink_phase=ink_phase, paper_phase=paper_phase, post_phase=post_phase)
-
-
 def draw_bounding_box_on_image(image, bounding_box):
     image = image.copy()
     left, top, right, bottom = bounding_box

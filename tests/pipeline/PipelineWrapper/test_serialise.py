@@ -40,7 +40,7 @@ def test_serialised_augmentations_can_be_recovered(example_line_image):
         seed=seed,
     )
 
-    serialised_pipeline_wrapper = pipelinewrapper.serialise()  # TODO: should this be named to_dict?
+    serialised_pipeline_wrapper = pipelinewrapper.to_dict()
     recovered_pipeline_wrapper = PipelineWrapper.from_dict(serialised_pipeline_wrapper)
 
     image_array = np.array(image)

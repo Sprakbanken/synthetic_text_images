@@ -3,7 +3,11 @@ from pathlib import Path
 
 from PIL import ImageFont
 
-from text_generation import create_datafiles, create_random_dark_color, create_random_light_color
+from text_generation.create import (
+    get_random_dark_color,
+    get_random_light_color,
+    create_line_images,
+)
 
 if __name__ == "__main__":
     text_file_path = Path(__file__).parent / "example_text.txt"
@@ -16,10 +20,10 @@ if __name__ == "__main__":
     font_sizes = [16, 40]
     rng = random.Random(42)
     light_mode_color_pairs = [
-        (create_random_dark_color(rng), create_random_light_color(rng)) for _ in range(10)
+        (get_random_dark_color(rng), get_random_light_color(rng)) for _ in range(10)
     ]
     dark_mode_color_pairs = [
-        (create_random_light_color(rng), create_random_dark_color(rng)) for _ in range(10)
+        (get_random_light_color(rng), get_random_dark_color(rng)) for _ in range(10)
     ]
     color_pairs = light_mode_color_pairs + dark_mode_color_pairs
 
@@ -31,7 +35,7 @@ if __name__ == "__main__":
     rng = random.Random(42)
 
     fonts = [ImageFont.truetype(font_path, rng.choice(font_sizes)) for font_path in font_paths]
-    create_datafiles(
+    create_line_images(
         text_lines=text_lines,
         output_dir=output_dir,
         fonts=fonts,
