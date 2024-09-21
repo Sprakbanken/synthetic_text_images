@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageFont
 
+from text_generation.fonts import FontInfo
 from text_generation.image_creation import create_line_image
 
 
@@ -14,7 +15,13 @@ def rng():
 
 @pytest.fixture
 def font_directory():
-    return Path(__file__).parent.parent / "fonts"
+    return Path(__file__).parent.parent / "fonts" / "sample"
+
+
+@pytest.fixture
+def fanwood_italic_font_info(font_directory) -> FontInfo:
+    font_path = font_directory / "fanwood-master/fanwood-master/"
+    return FontInfo(font_path, "Fanwood Italic", "Fanwood")
 
 
 @pytest.fixture
@@ -23,6 +30,13 @@ def fanwood_italic_font(font_directory) -> ImageFont.FreeTypeFont:
         font_directory / "fanwood-master/fanwood-master/webfonts/fanwood_text_italic-webfont.ttf"
     )
     return ImageFont.truetype(font_path, size=40)
+
+
+@pytest.fixture
+def ubuntu_sans_font_info(font_directory) -> FontInfo:
+    font_path = font_directory / "Ubuntu_Sans/"
+
+    return FontInfo(font_path, "Ubuntu Sans", "Ubuntu Sans")
 
 
 @pytest.fixture

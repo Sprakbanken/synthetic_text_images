@@ -12,7 +12,7 @@ def test_font_support_returns_true():
     assert check_font_support(text, font.path)
 
 
-def test_font_support_returns_false(fanwood_italic_font):
+def test_font_support_returns_false(fanwood_italic_font: ImageFont.FreeTypeFont):
     """When a font does not support all characters in a text it should return False."""
 
     text = "ÁáÂâÄäČčƷʒǮǯĐđǦǧǤǥǨǩŊŋÕõŠšŽžÖö"

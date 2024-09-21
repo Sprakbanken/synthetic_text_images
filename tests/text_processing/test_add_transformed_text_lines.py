@@ -1,0 +1,31 @@
+from text_generation.text_processing import TextLine, add_transformed_text_lines
+
+
+def test_uppercase_lines_are_added():
+    """The function should add uppercase lines to the text when str.upper is given"""
+    text = "Bourre beaivvi!"
+    chunks = [TextLine(text, "SOME ID")]
+    transformed_text = add_transformed_text_lines(chunks, str.upper)
+    transformed_text_lines = tuple(chunk.text for chunk in transformed_text)
+
+    assert transformed_text_lines == ("Bourre beaivvi!", "BOURRE BEAIVVI!")
+
+
+# TODO: maybe a test where the id can be something more than "SOME ID"
+def test_tranformed_lines_have_same_id_as_untransformed():
+    """The transformed lines should have the same id as their untransformed counterparts"""
+
+    text = "Bourre beaivvi!"
+    chunks = [TextLine(text, "SOME ID")]
+    transformed_text = tuple(add_transformed_text_lines(chunks, str.upper))
+
+    assert transformed_text[0].text_line_id == "SOME ID"
+    assert transformed_text[1].text_line_id == "SOME ID"
+
+
+def test_if_transform_makes_no_difference_its_not_added():
+    """If the transform function does not change the text, the transformed line is not added"""
+    text = "BOURRE BEAIVVI!"
+    chunks = [TextLine(text, "SOME ID")]
+    transformed_text = tuple(add_transformed_text_lines(chunks, str.upper))
+    assert len(transformed_text) == 1

@@ -1,3 +1,5 @@
+import hashlib
+import logging
 import random
 import uuid
 from pathlib import Path
@@ -6,6 +8,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
+from tqdm import tqdm
 
 from text_generation.color import (
     get_dark_mode_color_pair,
@@ -14,8 +17,11 @@ from text_generation.color import (
     get_random_light_color,
     is_dark_mode,
 )
+from text_generation.fonts import FontInfo, check_font_support
 from text_generation.image_processing import get_bounding_box_and_image_size
 from text_generation.text_processing import TextLineType
+
+logger = logging.getLogger(__name__)
 
 
 def create_line_image(
@@ -48,10 +54,34 @@ def create_line_image(
     return image, (left, top, right, bottom)
 
 
+def get_suitable_font(
+    text: str,
+    font_infos: Sequence[FontInfo],
+    size_range: range,
+    rng: random.Random,
+    max_tries: int = 10,
+) -> ImageFont.FreeTypeFont:
+    """Get a font that supports all characters in the text."""
+    for i in range(max_tries):
+        font_info = rng.choice(font_infos)
+        font = font_info.load_font(rng, size_range)
+        if check_font_support(text, font.path):
+            return font
+        logger.info(
+            "Selected font '%s', but it does not support all characters in the text '%s'. Trying another font (attempt %d/%d).",
+            font_info.name,
+            text,
+            i + 1,
+            max_tries,
+        )
+    raise ValueError(f"No suitable font found for string {text} after {max_tries} tries.")
+
+
 def create_line_images(
     text_lines: Iterable[TextLineType],
     output_dir: Path,
-    fonts: Sequence[ImageFont.FreeTypeFont],
+    fonts: Sequence[FontInfo],
+    size_range: range,
     color_pairs: Sequence[tuple[tuple[int, int, int], tuple[int, int, int]]],
     top_margins: Sequence[int],
     bottom_margins: Sequence[int],
@@ -62,10 +92,24 @@ def create_line_images(
     """Create images with text and save metadata to a CSV file."""
     metadata = []
 
-    for id_, line in enumerate(text_lines):
-        unique_id = uuid.uuid4()
+    for i, line in enumerate(tqdm(text_lines)):
+        sha1 = hashlib.sha1(f"INDEX-{i}-LINE-{line.text}".encode()).digest()
+        unique_id = uuid.UUID(bytes=sha1[:16], version=4)
 
-        font = rng.choice(fonts)
+        try:
+            font = get_suitable_font(
+                line.text,
+                fonts,
+                size_range,
+                rng,
+                100,
+            )
+        except ValueError:
+            logger.exception(
+                "Could not find a suitable font for text '%s'. Skipping line.", line.text
+            )
+            continue
+
         color_pair = rng.choice(color_pairs)
         top_margin = rng.choice(top_margins)
         bottom_margin = rng.choice(bottom_margins)
@@ -105,8 +149,8 @@ def create_line_images(
                 "bottom_margin": bottom_margin,
                 "left_margin": left_margin,
                 "right_margin": right_margin,
-                "bbox_left": bbox[1],
-                "bbox_top": bbox[0],
+                "bbox_left": bbox[0],
+                "bbox_top": bbox[1],
                 "bbox_right": bbox[2],
                 "bbox_bottom": bbox[3],
                 "image_width": image_size[0],

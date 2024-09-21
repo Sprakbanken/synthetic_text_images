@@ -1,5 +1,19 @@
+import os
+
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["GOTO_NUM_THREADS"] = "1"
+os.environ["OPENCV_FOR_THREADS_NUM"] = "1"
+os.environ["OPENCV_FOR_OPENMP_DYNAMIC_DISABLE"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+import argparse
+import logging
 import random
+import re
 import shutil
+import subprocess
 from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -7,26 +21,26 @@ from tempfile import TemporaryDirectory
 from typing import Literal
 
 import pandas as pd
-from PIL import ImageFont
+from lxml import etree
 
+from text_generation.augraphy_utils import create_scanned_book_pipeline
+from text_generation.color import get_dark_mode_color_pair, get_light_mode_color_pair
+from text_generation.fonts import FontInfo
 from text_generation.image_creation import create_line_images
 from text_generation.image_processing import distort_line_images
-from text_generation.augraphy_utils import create_scanned_book_pipeline
 from text_generation.text_processing import (
     TargetLengthDecider,
     add_transformed_text_lines,
     chunkify_words,
 )
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-@dataclass
-class FontInfo:
-    path: Path
-    name: str
-    family: str
-
-    def load_font(self, size: int):
-        return ImageFont.truetype(self.path, size)
+parser = argparse.ArgumentParser()
+parser.add_argument("--partition", type=int, default=0)
+parser.add_argument("--num_partitions", type=int, default=1)
+args = parser.parse_args()
 
 
 @dataclass
@@ -35,32 +49,56 @@ class DatasetFileInfo:
     path: Path
     language: str
     metadata: dict[str, str]
+    num_partitions: int = 1
+    partition_id: int = 0
 
-    def load_text_lines(self) -> list[str]:
-        return self.path.read_text().splitlines()
+    def load_segments(self) -> list[str]:
+        return self.path.read_text().splitlines()[self.partition_id :: self.num_partitions]
+
+    def join_segments(self, segments: list[str]) -> str:
+        return " ".join(segments)
 
     def iter_splits(
         self, test_fraction: float, val_fraction: float, rng: random.Random
     ) -> Generator[tuple[Literal["train", "test", "val"], list[str]], None, None]:
-        raw_text_lines = self.load_text_lines()
-        rng.shuffle(raw_text_lines)
-        n_total = len(raw_text_lines)
+        segments = self.load_segments()
+        rng.shuffle(segments)
+        n_total = len(segments)
         n_test = int(n_total * test_fraction)
         n_val = int(n_total * val_fraction)
 
-        yield "test", raw_text_lines[:n_test]
-        yield "val", raw_text_lines[n_test : n_test + n_val]
-        yield "train", raw_text_lines[n_test + n_val :]
+        yield "test", self.join_segments(segments[:n_test]).split()
+        yield "val", self.join_segments(segments[n_test : n_test + n_val]).split()
+        yield "train", self.join_segments(segments[n_test + n_val :]).split()
+
+
+class SikorFileInfo(DatasetFileInfo):
+    def handle_punctuation(self, segment: str) -> str:
+        """Strip space before punctuation"""
+        punctuation = ".,:;!?"
+        return re.sub(f" ([{punctuation}])", r"\g<1>", segment)
+
+    def join_segments(self, segments: list[str]) -> str:
+        return self.handle_punctuation(super().join_segments(segments))
+
+    def load_segments(self) -> list[str]:
+        """Load the sentences from the SIKOR XML file as segments"""
+        tree = etree.parse(self.path)
+        root = tree.getroot()
+
+        segments = [" ".join(sentence.xpath(".//w/@word")) for sentence in root.xpath("//sentence")]
+        return segments[self.num_partitions :: self.partition_id]
 
 
 @dataclass
 class DatasetInputInfo:
     name: str
-    lines: list[str]
+    text_segments: list[str]
     metadata: dict[str, str]
     split: Literal["train", "test", "val"]
     language: str
     font_list: list[FontInfo]
+    size_range: range
     color_pairs: Sequence[tuple[tuple[int, int, int], tuple[int, int, int]]]
     top_margins: int
     bottom_margins: int
@@ -72,11 +110,15 @@ class DatasetInputInfo:
 
 
 def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random.Random) -> Path:
+    logger.info("Creating word chunks")
     text_lines = chunkify_words(
-        dataset_info.lines, 5, 100, TargetLengthDecider(35, 10, 5, 100, rng)
+        dataset_info.text_segments, 5, 100, TargetLengthDecider(35, 10, 5, 100, rng)
     )
+    logger.info("Created word chunks")
 
     all_text_lines = add_transformed_text_lines(text_lines, str.upper)
+
+    logger.info("Creating line images")
     create_line_images(
         all_text_lines,
         output_path,
@@ -86,8 +128,10 @@ def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random
         bottom_margins=dataset_info.bottom_margins,
         left_margins=dataset_info.left_margins,
         right_margins=dataset_info.right_margins,
+        size_range=dataset_info.size_range,
         rng=rng,
     )
+    logger.info("Created line images, creating distorted images")
     distort_line_images(
         line_images_dir=output_path,
         output_dir=output_path,
@@ -95,6 +139,7 @@ def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random
         pipeline_creator=create_scanned_book_pipeline,
         distorted_subdir_name=dataset_info.split,
     )
+    logger.info("Created distorted images")
 
     return output_path
 
@@ -131,51 +176,67 @@ dataset_files = [
         metadata={"corpus_source": "something"},
         language=f"l{i}",
     )
-    for i in (1, 2)
+    for i in (1,)  # 2)
 ]
+
+dataset_files = [
+    SikorFileInfo(
+        name="SIKOR_free_sme_20151010",
+        path=Path(__file__).parent.parent.parent
+        / "input/SIKOR/SIKOR_sme_20151010/SIKOR_free_sme_20151010.xml",
+        metadata={"corpus_source": ""},
+        language="sme",
+        num_partitions=args.num_partitions,
+        partition_id=args.partition,
+    )
+]
+
+
+font_dir = Path(__file__).parent.parent.parent / "fonts/saami_ocr_nodalida25"
+font_list = pd.read_csv(font_dir / "full_font_info.csv")
+
 
 font_lists = {
     "train": [
-        FontInfo(
-            "/hdd/home/mariero/synthetic_text_images/fonts/Ubuntu_Sans/static/UbuntuSans_Condensed-Bold.ttf",
-            "Ubuntu Sans Condensed Bold",
-            "Ubuntu Sans",
-        ).load_font(64)
+        FontInfo.from_record(font_dir, record)
+        for record in font_list.query("split == 'train'").to_dict(orient="records")
     ],
     "val": [
-        FontInfo(
-            "/hdd/home/mariero/synthetic_text_images/fonts/Ubuntu_Sans/static/UbuntuSans-Light.ttf",
-            "Ubuntu Sans Light",
-            "Ubuntu Sans",
-        ).load_font(64)
+        FontInfo.from_record(font_dir, record)
+        for record in font_list.query("split == 'val'").to_dict(orient="records")
     ],
     "test": [
-        FontInfo(
-            "/hdd/home/mariero/synthetic_text_images/fonts/fanwood-master/fanwood-master/webfonts/fanwood_italic-webfont.ttf",
-            "Fanwood Italic",
-            "Fanwood",
-        ).load_font(64)
+        FontInfo.from_record(font_dir, record)
+        for record in font_list.query("split == 'test'").to_dict(orient="records")
     ],
 }
-
 rng = random.Random(42)
 
 raw_data = [
     DatasetInputInfo(
         name=f"{file_info.name}_{split}",
-        lines=lines,
+        text_segments=segments,
         metadata=file_info.metadata,
         language=file_info.language,
         split=split,
         font_list=font_lists[split],
-        top_margins=[20],
-        bottom_margins=[20],
-        left_margins=[20],
-        right_margins=[20],
-        color_pairs=[((0, 0, 0), (255, 255, 255)), ((255, 255, 255), (0, 0, 0))],
+        size_range=range(40, 100),
+        top_margins=[50],
+        bottom_margins=[50],
+        left_margins=[100],
+        right_margins=[100],
+        color_pairs=[
+            ((0, 0, 0), (255, 255, 255)),
+            ((255, 255, 255), (0, 0, 0)),
+            *[get_dark_mode_color_pair(rng) for _ in range(10)],
+            *[get_light_mode_color_pair(rng) for _ in range(20)],
+        ],
     )
     for file_info in dataset_files
-    for split, lines in file_info.iter_splits(test_fraction=0.2, val_fraction=0.1, rng=rng)
+    for split, segments in file_info.iter_splits(test_fraction=0.2, val_fraction=0.1, rng=rng)
 ]
 
-setup_and_combine_datasets(raw_data, Path("output"), rng)
+
+# Force all threads to run on the same CPU (doesn't matter much for speed since it barely runs on multiple cores)
+subprocess.run(["taskset", "-pc", str(args.partition), str(os.getpid())], check=True)
+setup_and_combine_datasets(raw_data, Path(f"output_{args.partition}"), rng)

@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageFont
+from PIL import Image, ImageDraw, ImageFont
+from tqdm import tqdm
 
 from text_generation.utils import parse_int_tuple
 
@@ -23,7 +24,10 @@ BoundingBox = tuple[int, int, int, int]
 def get_bbox_aware_crop_box(
     image_size: tuple[int, int],
     bounding_box: BoundingBox,
-    buffer_margin: int = 0,
+    buffer_margin_left: int = 0,
+    buffer_margin_top: int = 0,
+    buffer_margin_right: int = 0,
+    buffer_margin_bottom: int = 0,
     rng: random.Random | None = None,
 ) -> BoundingBox:
     """
@@ -41,12 +45,12 @@ def get_bbox_aware_crop_box(
     Examples:
         >>> image_size = (100, 100)
         >>> bounding_box = (10, 10, 90, 90)
-        >>> get_bbox_aware_crop_box(image_size, bounding_box, buffer_margin=10, rng=random.Random(0))
+        >>> get_bbox_aware_crop_box(image_size, bounding_box, buffer_margin_left=10, buffer_margin_top=10, buffer_margin_right=10, buffer_margin_bottom=10, rng=random.Random(0))
         (0, 0, 100, 100)
 
         >>> image_size = (200, 200)
         >>> bounding_box = (50, 50, 150, 150)
-        >>> crop_box = get_bbox_aware_crop_box(image_size, bounding_box, buffer_margin=0, rng=random.Random(1))
+        >>> crop_box = get_bbox_aware_crop_box(image_size, bounding_box, rng=random.Random(1))
         >>> 0 <= crop_box[0] < bounding_box[0]
         True
         >>> 0 <= crop_box[1] < bounding_box[1]
@@ -61,11 +65,11 @@ def get_bbox_aware_crop_box(
 
     bbox_left, bbox_top, bbox_right, bbox_bottom = bounding_box
 
-    crop_top = rng.randint(0, bbox_top - buffer_margin)
-    crop_left = rng.randint(0, bbox_left - buffer_margin)
+    crop_top = rng.randint(0, bbox_top - buffer_margin_top)
+    crop_left = rng.randint(0, bbox_left - buffer_margin_left)
 
-    crop_bottom = rng.randint(bbox_bottom + buffer_margin, image_size[1])
-    crop_right = rng.randint(bbox_right + buffer_margin, image_size[0])
+    crop_bottom = rng.randint(bbox_bottom + buffer_margin_bottom, image_size[1])
+    crop_right = rng.randint(bbox_right + buffer_margin_right, image_size[0])
     return crop_left, crop_top, crop_right, crop_bottom
 
 
@@ -118,6 +122,7 @@ def distort_line_images(
     rng: random.Random,
     pipeline_creator: PipelineCreator,
     distorted_subdir_name: str = "distorted_line_images",
+    outline_bbox: bool = False,
 ) -> None:
     """Distort images and save the results."""
     metadata = pd.read_csv(line_images_dir / "metadata.csv")
@@ -136,7 +141,7 @@ def distort_line_images(
     # TODO: should this read from metadata instead?
     line_image_paths = list(original_images_dir.glob("*.png"))
 
-    for idx, row in distorted_metadata.iterrows():
+    for idx, row in tqdm(distorted_metadata.iterrows()):
         # Copy the image to the original images directory
         original_image_path = line_images_dir / row["undistorted_file_name"]
 
@@ -163,6 +168,9 @@ def distort_line_images(
 
         # Save the distorted image
         distorted_image_path = distorted_images_dir / image_path.name
+        if outline_bbox:
+            draw = ImageDraw.Draw(distorted_image)
+            draw.rectangle((distorted_bbox), outline="red", width=2)
         distorted_image.save(distorted_image_path)
 
         # Save the log

@@ -12,14 +12,15 @@ from text_generation.text_processing import TextLine
 
 
 @pytest.fixture
-def example_line_images_directory(tmp_path: Path, ubuntu_sans_font) -> Path:
+def example_line_images_directory(tmp_path: Path, ubuntu_sans_font_info) -> Path:
     lines = ["Boure beaivvi", "God dag", "Mo manná?", "Hvordan går det?"]
     lines = [TextLine(line) for line in lines]
     output_path = tmp_path / "raw"
     create_line_images(
         text_lines=lines,
         output_dir=output_path,
-        fonts=[ubuntu_sans_font],
+        fonts=[ubuntu_sans_font_info],
+        size_range=range(40, 100),
         color_pairs=[((0, 0, 0), (255, 255, 255))],
         top_margins=[10],
         bottom_margins=[20],

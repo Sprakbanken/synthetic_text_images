@@ -29,8 +29,8 @@ if __name__ == "__main__":
     color_pairs = light_mode_color_pairs + dark_mode_color_pairs
 
     top_margins = [20]
-    bottom_margins = [30]
-    left_margins = [30]
+    bottom_margins = [20]
+    left_margins = [20]
     right_margins = [20]
 
     fonts = [ImageFont.truetype(font_path, rng.choice(font_sizes)) for font_path in font_paths]

@@ -75,7 +75,7 @@ def chunkify_words(
 
 logger = logging.getLogger(__name__)
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
 sentences = [

@@ -1,0 +1,12 @@
+[submodule "input/saami_ocr_nodalida25/corpus-sma"]
+	path = input/saami_ocr_nodalida25/raw/corpus-sma
+	url = https://github.com/giellalt/corpus-sma
+[submodule "input/saami_ocr_nodalida25/corpus-sme"]
+	path = input/saami_ocr_nodalida25/raw/corpus-sme
+	url = https://github.com/giellalt/corpus-sme
+[submodule "input/saami_ocr_nodalida25/corpus-smj"]
+	path = input/saami_ocr_nodalida25/raw/corpus-smj
+	url = https://github.com/giellalt/corpus-smj
+[submodule "input/saami_ocr_nodalida25/corpus-smn"]
+	path = input/saami_ocr_nodalida25/raw/corpus-smn
+	url = https://github.com/giellalt/corpus-smn

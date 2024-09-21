@@ -9,8 +9,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 class TextLineType(Protocol):
@@ -103,7 +102,7 @@ def chunkify_words(
                 current_chunk = restart_chunk(candidate_word, max_length)
         else:
             logger.debug(
-                "Chunk is long enough without candidate word, and to long with candidate word"
+                "Chunk is long enough without candidate word, and too long with candidate word"
                 "adding current chunk to chunks and restarting current chunk"
             )
             yield TextLine(text=current_chunk, text_line_id=str(uuid.uuid4()))

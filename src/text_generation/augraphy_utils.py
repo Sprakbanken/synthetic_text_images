@@ -212,6 +212,20 @@ def create_scanned_book_pipeline(
         )
 
     maybe_append(
+        ink_phase,
+        augmentations.Letterpress(
+            n_samples=(200, 500),
+            n_clusters=(300, 800),
+            std_range=(1500, 5000),
+            value_range=(0, 128),
+            value_threshold_range=(128, 128),
+            blur=1,
+        ),
+        probability=0.05,
+        rng=rng,
+    )
+
+    maybe_append(
         paper_phase,
         CustomImageBleedThrough(
             intensity_range=(0, 0),
@@ -246,6 +260,19 @@ def create_scanned_book_pipeline(
             texture_height_range=(50, 500),
         ),
         probability=0.5,
+        rng=rng,
+    )
+
+    maybe_append(post_phase, augmentations.Dithering(dither="floyd"), probability=0.05, rng=rng)
+
+    maybe_append(
+        post_phase,
+        augmentations.DepthSimulatedBlur(
+            blur_center="random",
+            blur_major_axes_length_range=(120, 200),
+            blur_minor_axes_length_range=(120, 200),
+        ),
+        probability=0.05,
         rng=rng,
     )
 
@@ -310,14 +337,6 @@ def create_scanned_book_pipeline(
 
     maybe_append(
         post_phase,
-        augmentations.SubtleNoise(
-            subtle_range=rng.randint(1, 5),
-        ),
-        probability=0.8,
-        rng=rng,
-    )
-    maybe_append(
-        post_phase,
         augmentations.Folding(
             fold_x=None,
             fold_deviation=(0, 0),
@@ -333,6 +352,40 @@ def create_scanned_book_pipeline(
     )
 
     maybe_append(
+        post_phase,
+        augmentations.BadPhotoCopy(
+            noise_type=rng.choice([1, 2]),
+            noise_side=rng.choice(["left", "right"]),
+            noise_iteration=(1, 1),
+            noise_size=(1, 1),
+            noise_sparsity=(0.4, 0.5),
+            noise_concentration=(0.2, 0.2),
+            blur_noise=1,
+            blur_noise_kernel=(5, 5),
+            wave_pattern=0,
+            edge_effect=1,
+        ),
+        probability=0.1,
+        rng=rng,
+    )
+    maybe_append(
+        post_phase,
+        augmentations.SubtleNoise(
+            subtle_range=rng.randint(1, 10),
+        ),
+        probability=0.8,
+        rng=rng,
+    )
+    maybe_append(
+        post_phase,
+        augmentations.SubtleNoise(
+            subtle_range=rng.randint(20, 30),
+        ),
+        probability=0.2,
+        rng=rng,
+    )
+
+    maybe_append(
         pre_phase,
         augmentations.Geometric(rotate_range=(-0.5, 0.5), padding_value=background_color),
         probability=0.5,
@@ -341,7 +394,14 @@ def create_scanned_book_pipeline(
     maybe_append(
         post_phase,
         augmentations.Geometric(
-            crop=get_bbox_aware_crop_box(image_size=image_size, bounding_box=bbox, buffer_margin=-1)
+            crop=get_bbox_aware_crop_box(
+                image_size=image_size,
+                bounding_box=bbox,
+                buffer_margin_left=-5,
+                buffer_margin_top=-5,
+                buffer_margin_right=-5,
+                buffer_margin_bottom=-5,
+            )
         ),
         probability=1,
         rng=rng,

@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 from PIL import Image, ImageChops, ImageFont
 
+from text_generation.fonts import FontInfo
 from text_generation.image_creation import create_line_image, create_line_images
 from text_generation.text_processing import TextLine
 from text_generation.utils import parse_int_tuple
@@ -13,10 +14,12 @@ from text_generation.utils import parse_int_tuple
 @pytest.mark.parametrize(
     "text_lines", [["Bures boahtin!"], ["Bures boahtin!", "Velkommen!", "Welcome!"]]
 )
-def test_one_file_per_line_is_created(tmp_path: Path, text_lines: list[str]):
+def test_one_file_per_line_is_created(
+    tmp_path: Path, text_lines: list[str], ubuntu_sans_font_info: FontInfo
+):
     """When calling create_datafiles one file per line should be created."""
 
-    fonts = [ImageFont.load_default()]
+    fonts = [ubuntu_sans_font_info]
     color_pairs = [((0, 0, 0), (255, 255, 255))]
     top_margins = [10]
     bottom_margins = [20]
@@ -27,6 +30,7 @@ def test_one_file_per_line_is_created(tmp_path: Path, text_lines: list[str]):
         text_lines=[TextLine(line) for line in text_lines],
         output_dir=tmp_path,
         fonts=fonts,
+        size_range=range(40, 100),
         color_pairs=color_pairs,
         top_margins=top_margins,
         bottom_margins=bottom_margins,
@@ -40,10 +44,12 @@ def test_one_file_per_line_is_created(tmp_path: Path, text_lines: list[str]):
 @pytest.mark.parametrize(
     "text_lines", [["Bures boahtin!"], ["Bures boahtin!", "Velkommen!", "Welcome!"]]
 )
-def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, text_lines: list[str]):
+def test_csv_file_with_right_header_and_rownumber_is_created(
+    tmp_path: Path, text_lines: list[str], ubuntu_sans_font_info: FontInfo
+):
     """When calling create_datafiles a CSV file with the right header and rownumber should be created."""
 
-    fonts = [ImageFont.load_default()]
+    fonts = [ubuntu_sans_font_info]
     color_pairs = [((0, 0, 0), (255, 255, 255))]
     top_margins = [10]
     bottom_margins = [20]
@@ -54,6 +60,7 @@ def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, tex
         text_lines=[TextLine(line) for line in text_lines],
         output_dir=tmp_path,
         fonts=fonts,
+        size_range=range(40, 100),
         color_pairs=color_pairs,
         top_margins=top_margins,
         bottom_margins=bottom_margins,
@@ -91,13 +98,11 @@ def test_csv_file_with_right_header_and_rownumber_is_created(tmp_path: Path, tex
     assert set(columns) == expected_columns
 
 
-def test_image_can_be_reproduced_from_csv_file(
-    tmp_path: Path, ubuntu_sans_font: ImageFont.FreeTypeFont
-):
+def test_image_can_be_reproduced_from_csv_file(tmp_path: Path, ubuntu_sans_font_info: FontInfo):
     """It should be possible to reproduce the image from the CSV file."""
 
     text_lines = [TextLine("Bures boahtin!")]
-    fonts = [ubuntu_sans_font]
+    fonts = [ubuntu_sans_font_info]
     color_pairs = [((0, 0, 0), (255, 255, 255))]
     top_margins = [10]
     bottom_margins = [20]
@@ -110,6 +115,7 @@ def test_image_can_be_reproduced_from_csv_file(
         text_lines=text_lines,
         output_dir=output_dir,
         fonts=fonts,
+        size_range=range(40, 100),
         color_pairs=color_pairs,
         top_margins=top_margins,
         bottom_margins=bottom_margins,
