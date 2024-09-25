@@ -1,3 +1,4 @@
+import itertools
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -22,6 +23,7 @@ from typing import Literal
 
 import pandas as pd
 from lxml import etree
+from tqdm import tqdm
 
 from text_generation.augraphy_utils import create_scanned_book_pipeline
 from text_generation.color import get_dark_mode_color_pair, get_light_mode_color_pair
@@ -90,6 +92,20 @@ class SikorFileInfo(DatasetFileInfo):
         return segments[self.num_partitions :: self.partition_id]
 
 
+class LineDirectoryDatasetInfo(DatasetFileInfo):
+    def iter_files(self) -> Generator[list[str], None, None]:
+        pattern = "converted/**/*.lines.txt"
+        files = sorted(self.path.glob(pattern))
+        for file in tqdm(files, desc=f"Loading text lines"):
+            yield file.read_text().splitlines()
+
+    def load_segments(self) -> list[str]:
+        return list(self.iter_files())
+
+    def join_segments(self, segments: list[list[str]]) -> str:
+        return " ".join(itertools.chain.from_iterable(segments))
+
+
 @dataclass
 class DatasetInputInfo:
     name: str
@@ -111,12 +127,17 @@ class DatasetInputInfo:
 
 def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random.Random) -> Path:
     logger.info("Creating word chunks")
+    # These values are chosen because when we run the chunk-algorithm on the training data, then the histogram
+    # of the chunk lengths is quite similar to the histogram of the line lengths in the training data. A main
+    # difference is that the training data contain a separate peak of many very short lines. Since this chunk
+    # algorithm is unimodal, it will not add that extra peak, but instead have a similar peak as the training
+    # data at approximately 40 characters.
     text_lines = chunkify_words(
-        dataset_info.text_segments, 5, 100, TargetLengthDecider(35, 10, 5, 100, rng)
+        dataset_info.text_segments, 5, 100, TargetLengthDecider(75, 40, 5, 100, random.Random())
     )
     logger.info("Created word chunks")
 
-    all_text_lines = add_transformed_text_lines(text_lines, str.upper)
+    all_text_lines = add_transformed_text_lines(tqdm(list(text_lines)), str.upper)
 
     logger.info("Creating line images")
     create_line_images(
@@ -191,6 +212,16 @@ dataset_files = [
     )
 ]
 
+dataset_files = [
+    LineDirectoryDatasetInfo(
+        name="corpus_smj",
+        path=Path(__file__).parent.parent.parent / "input/saami_ocr_nodalida25/lines/corpus-smj",
+        metadata={"corpus_source": "something"},
+        language="sme",
+        num_partitions=args.num_partitions,
+        partition_id=args.partition,
+    )
+]
 
 font_dir = Path(__file__).parent.parent.parent / "fonts/saami_ocr_nodalida25"
 font_list = pd.read_csv(font_dir / "full_font_info.csv")
@@ -239,4 +270,4 @@ raw_data = [
 
 # Force all threads to run on the same CPU (doesn't matter much for speed since it barely runs on multiple cores)
 subprocess.run(["taskset", "-pc", str(args.partition), str(os.getpid())], check=True)
-setup_and_combine_datasets(raw_data, Path(f"output_{args.partition}"), rng)
+setup_and_combine_datasets(raw_data, Path(f"output_{args.partition}_test"), rng)

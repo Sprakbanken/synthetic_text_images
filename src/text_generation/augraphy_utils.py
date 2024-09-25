@@ -237,7 +237,7 @@ def create_scanned_book_pipeline(
             image_bleedthrough_foreground_path=image_bleedthrough_foreground_path,
             p=1,
         ),
-        probability=0.1,
+        probability=0.2,
         rng=rng,
     )
 

@@ -92,7 +92,7 @@ def create_line_images(
     """Create images with text and save metadata to a CSV file."""
     metadata = []
 
-    for i, line in enumerate(tqdm(text_lines)):
+    for i, line in enumerate(text_lines):
         sha1 = hashlib.sha1(f"INDEX-{i}-LINE-{line.text}".encode()).digest()
         unique_id = uuid.UUID(bytes=sha1[:16], version=4)
 
