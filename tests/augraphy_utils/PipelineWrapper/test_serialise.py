@@ -3,7 +3,7 @@ import random
 import numpy as np
 from augraphy import augmentations
 
-from text_generation.augraphy_utils import PipelineWrapper, create_scanned_book_pipeline
+from synthetic_ocr_data.augraphy_utils import PipelineWrapper, create_scanned_book_pipeline
 
 
 def test_serialised_augmentations_can_be_recovered(example_line_image):

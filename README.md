@@ -1,1 +1,1 @@
-# text_generation
+# synthetic_ocr_data

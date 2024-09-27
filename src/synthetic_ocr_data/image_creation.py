@@ -10,16 +10,16 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from text_generation.color import (
+from synthetic_ocr_data.color import (
     get_dark_mode_color_pair,
     get_light_mode_color_pair,
     get_random_dark_color,
     get_random_light_color,
     is_dark_mode,
 )
-from text_generation.fonts import FontInfo, check_font_support
-from text_generation.image_processing import get_bounding_box_and_image_size
-from text_generation.text_processing import TextLineType
+from synthetic_ocr_data.fonts import FontInfo, check_font_support
+from synthetic_ocr_data.image_processing import get_bounding_box_and_image_size
+from synthetic_ocr_data.text_processing import TextLineType
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ def create_line_images(
         right_margin = rng.choice(right_margins)
         image_dir = output_dir / "line_images"
         image_dir.mkdir(exist_ok=True, parents=True)
-        output_path = image_dir / f"{unique_id}.png"
+        output_path = image_dir / f"{unique_id}.jpg"
 
         image, bbox = create_line_image(
             text=line.text,
@@ -131,7 +131,7 @@ def create_line_images(
         image_size = image.size
 
         # Save the image
-        image.save(output_path)
+        image.save(output_path, quality=90)
 
         # Store metadata
         metadata.append(

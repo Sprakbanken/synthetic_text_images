@@ -3,8 +3,8 @@ import random
 import numpy as np
 from augraphy import AugmentationSequence, AugraphyPipeline, augmentations
 
-from text_generation.image_processing import distort_line_image
-from text_generation.augraphy_utils import PipelineWrapper
+from synthetic_ocr_data.image_processing import distort_line_image
+from synthetic_ocr_data.augraphy_utils import PipelineWrapper
 
 
 def test_line_image_is_distorted(example_line_image):

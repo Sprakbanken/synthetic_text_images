@@ -7,9 +7,9 @@ import cv2
 import numpy as np
 from augraphy import Augmentation, AugraphyPipeline, BleedThrough, augmentations
 
-from text_generation.color import get_random_highlight_color
-from text_generation.image_processing import get_bbox_aware_crop_box
-from text_generation.image_creation import (
+from synthetic_ocr_data.color import get_random_highlight_color
+from synthetic_ocr_data.image_processing import get_bbox_aware_crop_box
+from synthetic_ocr_data.image_creation import (
     is_dark_mode,
     get_random_dark_color,
     get_random_light_color,
@@ -59,7 +59,8 @@ class PipelineWrapper:
         AugmentationType = getattr(
             augmentations,
             name,
-        )  # TODO: Fallback dersom AugmentationType ikke finnes
+            None
+        )
         if AugmentationType is None:
             if name == "CustomImageBleedThrough":
                 AugmentationType = CustomImageBleedThrough
@@ -191,7 +192,7 @@ def create_scanned_book_pipeline(
         colorswap_color = get_random_dark_color(rng=rng)
 
     if font_size and font_size > 40:
-        maybe_append(  # TODO: only add this if font-size is large enlough
+        maybe_append( 
             ink_phase,
             augmentations.DotMatrix(
                 dot_matrix_shape="circle",

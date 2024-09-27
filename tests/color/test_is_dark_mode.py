@@ -1,4 +1,4 @@
-from text_generation.color import get_dark_mode_color_pair, get_light_mode_color_pair, is_dark_mode
+from synthetic_ocr_data.color import get_dark_mode_color_pair, get_light_mode_color_pair, is_dark_mode
 
 
 def test_darkmode_colors_are_classified_correctly(rng):

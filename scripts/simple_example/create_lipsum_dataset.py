@@ -8,11 +8,11 @@ from typing import Literal, Self
 
 import pandas as pd
 
-from text_generation.augraphy_utils import create_scanned_book_pipeline
-from text_generation.fonts import FontInfo
-from text_generation.image_creation import create_line_images
-from text_generation.image_processing import distort_line_images
-from text_generation.text_processing import (
+from synthetic_ocr_data.augraphy_utils import create_scanned_book_pipeline
+from synthetic_ocr_data.fonts import FontInfo
+from synthetic_ocr_data.image_creation import create_line_images
+from synthetic_ocr_data.image_processing import distort_line_images
+from synthetic_ocr_data.text_processing import (
     TargetLengthDecider,
     add_transformed_text_lines,
     chunkify_words,

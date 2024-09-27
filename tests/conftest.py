@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageFont
 
-from text_generation.fonts import FontInfo
-from text_generation.image_creation import create_line_image
+from synthetic_ocr_data.fonts import FontInfo
+from synthetic_ocr_data.image_creation import create_line_image
 
 
 @pytest.fixture

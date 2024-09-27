@@ -5,10 +5,10 @@ import pandas as pd
 import pytest
 from PIL import Image, ImageChops, ImageFont
 
-from text_generation.fonts import FontInfo
-from text_generation.image_creation import create_line_image, create_line_images
-from text_generation.text_processing import TextLine
-from text_generation.utils import parse_int_tuple
+from synthetic_ocr_data.fonts import FontInfo
+from synthetic_ocr_data.image_creation import create_line_image, create_line_images
+from synthetic_ocr_data.text_processing import TextLine
+from synthetic_ocr_data.utils import parse_int_tuple
 
 
 @pytest.mark.parametrize(
@@ -38,7 +38,7 @@ def test_one_file_per_line_is_created(
         right_margins=right_margins,
         rng=rng,
     )
-    assert len(list(tmp_path.glob("line_images/*.png"))) == len(text_lines)
+    assert len(list(tmp_path.glob("line_images/*.jpg"))) == len(text_lines)
 
 
 @pytest.mark.parametrize(
@@ -143,7 +143,11 @@ def test_image_can_be_reproduced_from_csv_file(tmp_path: Path, ubuntu_sans_font_
     unique_id = series["unique_id"]
 
     recreated_image, _ = create_line_image(**parameter_dict)
-    original_image = Image.open(output_dir / f"line_images/{unique_id}.png")
+    original_image = Image.open(output_dir / f"line_images/{unique_id}.jpg")
+
+    # Save and load to get JPEG compression artifacts
+    recreated_image.save(output_dir / f"line_images/{unique_id}_recreated.jpg", quality=90)
+    recreated_image = Image.open(output_dir / f"line_images/{unique_id}_recreated.jpg")
 
     # Check that the images are the same
     assert original_image.size == recreated_image.size

@@ -1,6 +1,6 @@
 import pytest
 
-from text_generation.text_processing import restart_chunk
+from synthetic_ocr_data.text_processing import restart_chunk
 
 
 def test_chunk_restarts_with_candidate_word_if_short_enough():

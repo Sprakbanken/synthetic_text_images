@@ -1,6 +1,6 @@
 from PIL import ImageFont
 
-from text_generation.fonts import check_font_support
+from synthetic_ocr_data.fonts import check_font_support
 
 
 def test_font_support_returns_true():

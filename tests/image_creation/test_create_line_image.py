@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 
-from text_generation.image_creation import create_line_image
+from synthetic_ocr_data.image_creation import create_line_image
 
 
 def test_image_is_created(ubuntu_sans_font):

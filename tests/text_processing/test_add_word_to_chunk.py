@@ -1,6 +1,6 @@
 import pytest
 
-from text_generation.text_processing import add_word_to_chunk
+from synthetic_ocr_data.text_processing import add_word_to_chunk
 
 
 @pytest.mark.parametrize("candidate_word", ["sátni", "ord", "word"])

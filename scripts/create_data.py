@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PIL import ImageFont
 
-from text_generation.image_creation import (
+from synthetic_ocr_data.image_creation import (
     get_random_dark_color,
     get_random_light_color,
     create_line_images,

@@ -1,6 +1,6 @@
 import pytest
 
-from text_generation.text_processing import calculate_candidate_length
+from synthetic_ocr_data.text_processing import calculate_candidate_length
 
 
 @pytest.mark.parametrize("candidate_word", ["sátni", "ord", "word"])

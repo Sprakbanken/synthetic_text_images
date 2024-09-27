@@ -4,11 +4,11 @@ from pathlib import Path
 from PIL import ImageFont
 import itertools
 
-from text_generation.image_creation import create_line_images
-from text_generation.color import get_dark_mode_color_pair, get_light_mode_color_pair
-from text_generation.image_processing import distort_line_images
-from text_generation.augraphy_utils import create_scanned_book_pipeline
-from text_generation.text_processing import (
+from synthetic_ocr_data.image_creation import create_line_images
+from synthetic_ocr_data.color import get_dark_mode_color_pair, get_light_mode_color_pair
+from synthetic_ocr_data.image_processing import distort_line_images
+from synthetic_ocr_data.augraphy_utils import create_scanned_book_pipeline
+from synthetic_ocr_data.text_processing import (
     TargetLengthDecider,
     add_transformed_text_lines,
     chunkify_words,

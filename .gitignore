@@ -2,6 +2,7 @@
 TODO
 ignore*.*
 output*/
+input/saami_ocr_nodalida25/lines/
 
 augraphy_cache/
 augmentation_images/

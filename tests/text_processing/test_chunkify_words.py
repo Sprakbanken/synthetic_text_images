@@ -1,4 +1,4 @@
-from text_generation.text_processing import chunkify_words
+from synthetic_ocr_data.text_processing import chunkify_words
 
 
 def test_chunkify_words_chunks_simple_sentence_correctly():

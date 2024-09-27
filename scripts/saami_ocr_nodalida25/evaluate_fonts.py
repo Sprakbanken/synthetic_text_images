@@ -5,7 +5,7 @@ import pandas as pd
 import urllib3
 import urllib3.util
 
-from text_generation.fonts import check_font_support
+from synthetic_ocr_data.fonts import check_font_support
 
 # Define paths
 font_directory = Path(__file__).parent.parent.parent / "fonts/saami_ocr_nodalida25"

@@ -1,4 +1,4 @@
-from text_generation.text_processing import TextLine, add_transformed_text_lines
+from synthetic_ocr_data.text_processing import TextLine, add_transformed_text_lines
 
 
 def test_uppercase_lines_are_added():

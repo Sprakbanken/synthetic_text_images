@@ -12,6 +12,30 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
+def clean(text: str) -> str:
+    # Copied from the github.com/sprakbanken/sami_ocr repository
+    bad_chars_and_replacements = [
+        # replace non-breaking space with normal space
+        ("\xa0", " "),
+        # replace variants of quotation marks
+        ("«", '"'),
+        ("»", '"'),
+        ("”", '"'),
+        # replace variants of apostrophe
+        ("ʼ", "'"),
+        ("’", "'"),
+        ("ʹ", "'"),
+        # replace Ds
+        ("Ð", "Đ"),
+        ("Ɖ", "Đ"),
+        # replace em dash with en dash
+        ("—", "–"),
+    ]
+    for bad_char, replacement in bad_chars_and_replacements:
+        text = text.replace(bad_char, replacement)
+    return text
+
+
 class TextLineType(Protocol):
     text: str
     text_line_id: str

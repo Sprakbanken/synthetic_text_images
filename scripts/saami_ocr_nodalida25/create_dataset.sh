@@ -1,6 +1,12 @@
 #! /bin/bash
 
-for i in 0 1 2 3 4 5
+if [ -z "$1" ]; then
+  echo "Error: No language provided."
+  exit 1
+fi
+
+num_partitions=25
+for i in $(seq 0 $((num_partitions-1)))
 do
-    pdm run python create_dataset.py --partition $i --num_partitions 6 & echo $!
+    pdm run python create_dataset.py --language $1 --output_dir "/mnt/disk3/synthetic_ocr_data/" --partition $i --num_partitions $num_partitions & echo $!
 done

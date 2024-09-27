@@ -10,13 +10,13 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from text_generation.utils import parse_int_tuple
+from synthetic_ocr_data.utils import parse_int_tuple
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from pathlib import Path
 
-    from text_generation.augraphy_utils import Augmenter, PipelineCreator
+    from synthetic_ocr_data.augraphy_utils import Augmenter, PipelineCreator
 
 BoundingBox = tuple[int, int, int, int]
 
