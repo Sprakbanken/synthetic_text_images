@@ -29,10 +29,11 @@ from tqdm import tqdm
 from synthetic_ocr_data.augraphy_utils import create_scanned_book_pipeline
 from synthetic_ocr_data.color import get_dark_mode_color_pair, get_light_mode_color_pair
 from synthetic_ocr_data.fonts import FontInfo
-from synthetic_ocr_data.image_creation import create_line_images
+from synthetic_ocr_data.image_creation import create_line_images, get_suitable_font
 from synthetic_ocr_data.image_processing import distort_line_images
 from synthetic_ocr_data.text_processing import (
     TargetLengthDecider,
+    TextLineType,
     add_transformed_text_lines,
     chunkify_words,
     clean,
@@ -105,9 +106,24 @@ class DatasetInputInfo:
     right_margins: int
     max_lines: int = 0
     uppercase_fraction: float = 0.1
+    partition_id: int = 0
 
     def get_huggingface_path(self, output_path: Path) -> Path:
         return output_path / "huggingface" / self.metadata["file"]
+
+
+def check_suitable(line: TextLineType, fonts: Sequence[FontInfo], size_range: range, rng: random.Random):
+    try:
+        get_suitable_font(
+            line.text,
+            fonts,
+            size_range,
+            rng,
+            20,
+        )
+    except ValueError:
+        return False
+    return True
 
 
 def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random.Random) -> Path:
@@ -117,22 +133,24 @@ def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random
     # difference is that the training data contain a separate peak of many very short lines. Since this chunk
     # algorithm is unimodal, it will not add that extra peak, but instead have a similar peak as the training
     # data at approximately 40 characters.
-    text_lines = list(chunkify_words(
+    all_text_lines = list(chunkify_words(
         dataset_info.words, 5, 100, TargetLengthDecider(75, 40, 5, 100, rng)
     ))
-    rng.shuffle(text_lines)
-
-    num_upper = dataset_info.uppercase_fraction * dataset_info.max_lines
-    # 2 * num_upper because we keep both the transformed and untransformed data
-    num_untransformed = int(dataset_info.max_lines - 2 * num_upper)
-
-    logger.info("Created word chunks")
-    untransformed_text_lines = add_transformed_text_lines(text_lines[:num_untransformed])
-    transformed_text_lines = add_transformed_text_lines(text_lines[num_untransformed:dataset_info.max_lines], str.upper)
+    rng.shuffle(all_text_lines)
+    all_text_lines = [
+        line
+        for line in tqdm(all_text_lines)
+        if check_suitable(line, dataset_info.font_list, dataset_info.size_range, rng)
+    ]
+    num_upper = int(dataset_info.max_lines* dataset_info.uppercase_fraction)
+    num_untransformed = dataset_info.max_lines - 2 * num_upper
+    untransformed_text_lines = list(add_transformed_text_lines(all_text_lines[:num_untransformed]))
+    transformed_text_lines = list(add_transformed_text_lines(all_text_lines[num_untransformed:num_untransformed + num_upper], str.upper))
+    text_lines = untransformed_text_lines + transformed_text_lines
 
     logger.info("Creating line images")
     create_line_images(
-        tqdm(itertools.chain(untransformed_text_lines, transformed_text_lines), desc="Creating line images", total=dataset_info.max_lines),
+        tqdm(text_lines, desc="Creating line images"),
         output_path,
         fonts=dataset_info.font_list,
         color_pairs=dataset_info.color_pairs,
@@ -142,6 +160,8 @@ def setup_dataset(dataset_info: DatasetInputInfo, output_path: Path, rng: random
         right_margins=dataset_info.right_margins,
         size_range=dataset_info.size_range,
         rng=rng,
+        font_parent=Path(__file__).parent.parent.parent / "fonts" / "saami_ocr_nodalida25",
+        uuid_prefix=dataset_info.partition_id
     )
     logger.info("Created line images, creating distorted images")
     distort_line_images(
@@ -213,7 +233,7 @@ test_fraction = 0.2
 val_fraction = 0.1
 train_fraction = 1 - test_fraction - val_fraction
 
-num_lines = 100_000
+num_lines = 110_000
 num_lines_per_split = {
     "train": int(num_lines * train_fraction / args.num_partitions),
     "test": int(num_lines * test_fraction / args.num_partitions),
@@ -243,6 +263,7 @@ raw_data = [
             *[get_light_mode_color_pair(rng) for _ in range(20)],
         ],
         max_lines=num_lines_per_split[split],
+        partition_id=args.partition,
     )
     for split, words in file_info.iter_splits(test_fraction=test_fraction, val_fraction=val_fraction, rng=rng)
 ]
@@ -250,7 +271,7 @@ raw_data = [
 
 # Force all threads to run on the same CPU (doesn't matter much for speed since it barely runs on multiple cores)
 subprocess.run(["taskset", "-pc", str(args.partition), str(os.getpid())], check=True)
-out_dir = args.output_dir / language._name_.lower() / f"output_{args.partition}_max_{args.num_partitions-1}"
+out_dir = args.output_dir / language._name_.lower() / f"output_{args.partition:02d}_max_{args.num_partitions-1}"
 out_dir.mkdir(parents=True, exist_ok=True)
 setup_and_combine_datasets(
     raw_data,
@@ -265,17 +286,21 @@ val_lines = metadata.query("file_name.str.startswith('val')").shape[0]
 test_lines = metadata.query("file_name.str.startswith('test')").shape[0]
 git_info = GitInfo.from_language_code(language_code)
 
-jinja2.Environment(
-    loader=jinja2.FileSystemLoader(Path(__file__).parent)
-).get_template("dataset_readme.md.j2").stream(
-    language=language._value_,
-    corpus_hash=git_info.submodule_commit,
-    train_perc=100 * (1 - test_fraction - val_fraction),
-    train_lines=train_lines,
-    val_perc=100 * val_fraction,
-    val_lines=val_lines,
-    test_prec=100 * test_fraction,
-    test_lines=test_lines,
-    repo_hash=git_info.commit,
-    language_code=language_code,
-).dump(out_dir / "README.md")
+readme = (
+    jinja2.Environment(loader=jinja2.FileSystemLoader(Path(__file__).parent))
+    .get_template("dataset_readme.md.j2")
+    .render(
+        language=language._value_,
+        corpus_hash=git_info.submodule_commit,
+        train_perc=int(100 * (1 - test_fraction - val_fraction)),
+        train_lines=train_lines,
+        val_perc=int(100 * val_fraction),
+        val_lines=val_lines,
+        test_perc=int(100 * test_fraction),
+        test_lines=test_lines,
+        repo_hash=git_info.commit,
+        language_code=language_code,
+    )
+)
+
+(out_dir / "README.md").write_text(readme)

@@ -138,8 +138,9 @@ def distort_line_images(
 
     distorted_metadata = metadata.copy()
 
-    # TODO: should this read from metadata instead?
-    line_image_paths = list(original_images_dir.glob("*.png"))
+    line_image_paths = (line_images_dir / metadata["undistorted_file_name"]).to_list()
+    for line_image_path in line_image_paths:
+        assert line_image_path.exists(), f"File {line_image_path} does not exist."
 
     for idx, row in tqdm(list(distorted_metadata.iterrows())):
         # Copy the image to the original images directory

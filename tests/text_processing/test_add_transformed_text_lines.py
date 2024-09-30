@@ -1,3 +1,5 @@
+import pytest
+
 from synthetic_ocr_data.text_processing import TextLine, add_transformed_text_lines
 
 
@@ -11,16 +13,16 @@ def test_uppercase_lines_are_added():
     assert transformed_text_lines == ("Bourre beaivvi!", "BOURRE BEAIVVI!")
 
 
-# TODO: maybe a test where the id can be something more than "SOME ID"
-def test_tranformed_lines_have_same_id_as_untransformed():
+@pytest.mark.parametrize("text_id", ["SOME ID", "ANOTHER ID"])
+def test_tranformed_lines_have_same_id_as_untransformed(text_id):
     """The transformed lines should have the same id as their untransformed counterparts"""
 
     text = "Bourre beaivvi!"
-    chunks = [TextLine(text, "SOME ID")]
+    chunks = [TextLine(text, text_id)]
     transformed_text = tuple(add_transformed_text_lines(chunks, str.upper))
 
-    assert transformed_text[0].text_line_id == "SOME ID"
-    assert transformed_text[1].text_line_id == "SOME ID"
+    assert transformed_text[0].text_line_id == text_id
+    assert transformed_text[1].text_line_id == text_id
 
 
 def test_if_transform_makes_no_difference_its_not_added():

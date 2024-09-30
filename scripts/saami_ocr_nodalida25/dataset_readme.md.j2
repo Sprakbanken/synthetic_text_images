@@ -1,3 +1,12 @@
+---
+language: {{ language_code }}
+tags:
+- {{ language }}
+- ocr
+task_categories:
+- image-to-text
+---
+
 # Synthetic text images for {{ language }}
 This dataset contains synthetic line images meant for fitting OCR models for {{ language }}.
 Clean line images are created using Pillow and they are subsequently distorted using Augraphy [[1]].
@@ -6,7 +15,7 @@ Clean line images are created using Pillow and they are subsequently distorted u
 The text in this dataset comes from [Giellatekno]'s corpus. Specifically, we used the data files of the `converted/`-directory of [[2]] (commit hash {{ corpus_hash }}).
 
 ## Splits
-The dataset is split randomly by file so {{ train_perc }} % of the files ({{ train_lines }} lines) are in the training split, {{ val_perc }} % of the files ({{ val_lines }} lines) are in the validation split and {{ test_prec }} % of the files ({{ test_lines }} lines) are in the test split.
+The dataset is split randomly by file so {{ train_perc }} % of the files ({{ train_lines }} lines) are in the training split, {{ val_perc }} % of the files ({{ val_lines }} lines) are in the validation split and {{ test_perc }} % of the files ({{ test_lines }} lines) are in the test split.
 Each split has a unique set of typefaces and text/background colors.
 
 ## Code

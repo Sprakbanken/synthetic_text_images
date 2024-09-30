@@ -1,7 +1,7 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, Self, Sequence, runtime_checkable
+from typing import Any, Protocol, Self, Sequence, TypedDict, runtime_checkable
 
 import cv2
 import numpy as np
@@ -18,10 +18,14 @@ from synthetic_ocr_data.image_creation import (
 BoundingBox = tuple[int, int, int, int]
 
 
-# TODO: types. the augment method returns more than just an image
+class AugmentedOutputDict(TypedDict):
+    output: np.ndarray
+    bounding_boxes: list[BoundingBox]
+
+
 @runtime_checkable
 class Augmenter(Protocol):
-    def augment(self, image: np.ndarray) -> dict[str, Any]:
+    def augment(self, image: np.ndarray) -> dict[str, AugmentedOutputDict]:
         """Apply augmentation to the given image and return the augmented image."""
         ...
 
@@ -49,6 +53,7 @@ class PipelineWrapper:
     pre_phase: list[Augmentation]
     seed: int
     bounding_boxes: list[tuple[int, int, int, int]] = None
+    seeds: list[int] = field(default_factory=list)
 
     @staticmethod
     def serialise_augmentation(augmentation) -> dict[str, Any]:
@@ -80,13 +85,30 @@ class PipelineWrapper:
             random_seed=self.seed,
         )
 
-    def augment(self, image: np.ndarray) -> dict[str, Any]:
+    def seed_rng_and_get_pipeline(self) -> AugraphyPipeline:
         pipeline = self.get_pipeline()
         random.seed(self.seed)
         np.random.seed(self.seed)
         cv2.setRNGSeed(self.seed)
-        return pipeline.augment(image)
+        return pipeline
 
+    def augment(
+            self,
+            image: np.ndarray,
+            seed: None | int = None,
+        ) -> dict[str, AugmentedOutputDict]:
+        if seed is None:
+            seed = self.seed
+
+        pipeline = self.seed_rng_and_get_pipeline()
+        try:
+            return pipeline.augment(image)
+        except cv2.error:
+            self.seed += 1
+            self.seeds.append(self.seed)
+            pipeline = self.seed_rng_and_get_pipeline()
+            return pipeline.augment(image)
+            
     def to_dict(self) -> dict[str, Any]:
         return {
             "ink_phase": [self.serialise_augmentation(a) for a in self.ink_phase],

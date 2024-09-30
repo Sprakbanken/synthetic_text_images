@@ -5,6 +5,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+mkdir -p /mnt/disk3/synthetic_ocr_data/
 num_partitions=25
 for i in $(seq 0 $((num_partitions-1)))
 do

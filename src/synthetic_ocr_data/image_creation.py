@@ -8,7 +8,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
-from tqdm import tqdm
+from tqdm import trange
 
 from synthetic_ocr_data.color import (
     get_dark_mode_color_pair,
@@ -67,7 +67,7 @@ def get_suitable_font(
         font = font_info.load_font(rng, size_range)
         if check_font_support(text, font.path):
             return font
-        logger.info(
+        logger.debug(
             "Selected font '%s', but it does not support all characters in the text '%s'. Trying another font (attempt %d/%d).",
             font_info.name,
             text,
@@ -88,12 +88,14 @@ def create_line_images(
     left_margins: Sequence[int],
     right_margins: Sequence[int],
     rng: random.Random,
+    font_parent: Path,
+    uuid_prefix: str = "",
 ) -> None:
     """Create images with text and save metadata to a CSV file."""
-    metadata = []
 
+    metadata = []
     for i, line in enumerate(text_lines):
-        sha1 = hashlib.sha1(f"INDEX-{i}-LINE-{line.text}".encode()).digest()
+        sha1 = hashlib.sha1(f"PREFIX-{uuid_prefix}-INDEX-{i}-LINE-{line.text}".encode()).digest()
         unique_id = uuid.UUID(bytes=sha1[:16], version=4)
 
         try:
@@ -141,7 +143,7 @@ def create_line_images(
                 "text_line_id": line.text_line_id,
                 "raw_text": line.raw_text,
                 "text_transform": line.transform,
-                "font_path": font.path,
+                "font_path": Path(font.path).relative_to(font_parent),
                 "font_size": font.size,
                 "text_color": color_pair[0],
                 "background_color": color_pair[1],
@@ -158,5 +160,6 @@ def create_line_images(
                 "undistorted_file_name": output_path.relative_to(output_dir),
             }
         )
+    
     df = pd.DataFrame(metadata)
     df.to_csv(output_dir / "metadata.csv", index=False)
