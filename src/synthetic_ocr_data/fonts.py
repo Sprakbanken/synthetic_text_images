@@ -41,4 +41,9 @@ def check_font_support(text: str, font_path: Path) -> bool:
     for char in text:
         if ord(char) not in cmap:
             return False
+    try:
+        _ = ImageFont.truetype(font_path).getbbox(text)
+    except OSError:
+        # To handle the "OSError: execution context too long" error message
+        return False
     return True
