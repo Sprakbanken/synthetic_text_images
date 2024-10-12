@@ -1,0 +1,62 @@
+---
+language: smi
+tags:
+- sma
+- sme
+- smj
+- smn
+- smi
+- ocr
+task_categories:
+- image-to-text
+---
+
+# Synthetic text images for North, South, Lule and Inari Sámi
+This dataset contains synthetic line images meant for fitting OCR models for North, South, Lule and Inari Sámi.
+Clean line images are created using Pillow and they are subsequently distorted using Augraphy [[1]].
+
+## Text sources
+The text in this dataset comes from [Giellatekno]'s corpus. Specifically, we used the data files of the `converted/`-directories of [[2]][[3]][[4]][[5]] (commit hashes `{{ sma_hash }}`, `{{ sme_hash }}`, `{{ smj_hash }}`, `{{ smn_hash }}`).
+
+## Splits
+The dataset is split randomly by file so {{ train_perc }} % of the files ({{ train_lines }} lines) are in the training split, {{ val_perc }} % of the files ({{ val_lines }} lines) are in the validation split and {{ test_perc }} % of the files ({{ test_lines }} lines) are in the test split.
+Each split has a unique set of typefaces and text/background colors.
+
+## Language distribution
+The language distribution for the different languages are
+
+| Language Code |       Num train lines |       Num val lines |       Num test lines |
+|---------------|-----------------------|---------------------|----------------------|
+| sma           | {{ sma_train_lines }} | {{ sma_val_lines }} | {{ sma_test_lines }} |
+| sme           | {{ sme_train_lines }} | {{ sme_val_lines }} | {{ sme_test_lines }} |
+| smj           | {{ smj_train_lines }} | {{ smj_val_lines }} | {{ smj_test_lines }} |
+| smn           | {{ smn_train_lines }} | {{ smn_val_lines }} | {{ smn_test_lines }} |
+
+## Code
+The code to create this dataset is available on our [GitHub Repo] (commit hash {{ repo_hash }}).
+
+## Referencing the dataset
+If you use this dataset in your research, then please cite both
+"Enstad T, Trosterud T, Røsok MI, Beyer Y, Roald M. Comparative analysis of optical character recognition methods for Sámi texts from the National Library of Norway. Accepted for publication in Proceedings of the 25th Nordic Conference on Computational Linguistics (NoDaLiDa) 2025."
+(see the [paper repository]) and the SIKOR dataset the Sámi text is from:
+"SIKOR UiT The Arctic University of Norway and the Norwegian Saami Parliament's Saami text collection, http://gtweb.uit.no/korp, Version 01.12.2021 [Data set]."
+Also note that the SIKOR dataset to get Sámi text for the images is (CC-BY 3.0) licensed.
+
+## Dataset license
+The dataset is licensed with a CC-BY 3.0 license.
+
+[1]: https://github.com/sparkfish/augraphy
+
+[2]: https://github.com/giellalt/corpus-sma
+
+[3]: https://github.com/giellalt/corpus-sme
+
+[4]: https://github.com/giellalt/corpus-smj
+
+[5]: https://github.com/giellalt/corpus-smn
+
+[Giellatekno]: https://giellatekno.uit.no/
+
+[GitHub Repo]: https://github.com/Sprakbanken/synthetic_text_images
+
+[paper repository]: https://github.com/Sprakbanken/nodalida25_sami_ocr

@@ -15,31 +15,21 @@ logging.basicConfig(format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", type=Path, required=True)
 parser.add_argument("--output", type=Path, required=True)
-parser.add_argument("--add-name", action="store_true", default=False)
-parser.add_argument("--name", type=str, default="dataset", help="Name of the column used if --add-name is set")
-
 args = parser.parse_args()
-dataset_metadata_files = sorted(args.input.glob("*/metadata.csv"))
-dataset_directories = [metadata_file.parent for metadata_file in dataset_metadata_files]
-logging.info("Found %d datasets", len(dataset_directories))
+language_names = ["sma", "sme", "smj", "smn"]
+dataset_metadata_files = [args.input / d / "metadata.csv" for d in language_names]
+dataset_directories = [args.input / d for d in language_names]
 
 output_directory = args.output
 if output_directory.exists():
     raise ValueError(f"Output directory {output_directory} already exists.")
 
-if not args.add_name:
-    metadata = pd.concat([
-        pd.read_csv(metadata_file)
-        for metadata_file in dataset_metadata_files
-    ])
-else:
-    if not args.name.isidentifier():
-        raise ValueError(f"{args.name} is not a valid Python identifier")
-
-    metadata = pd.concat([
-        pd.read_csv(metadata_file).assign(**{args.name: metadata_file.parent.name})
-        for metadata_file in dataset_metadata_files
-    ])
+# Add language information to dataset
+metadata = pd.concat([
+    pd.read_csv(metadata_file).assign(language_code=metadata_file.parent.name)
+    for metadata_file in dataset_metadata_files
+])
+assert set(metadata["language_code"]) == {"sma", "sme", "smj", "smn"}
 
 logger.info("Found metadata for %d images", len(metadata))
 print((metadata).shape)
@@ -55,6 +45,15 @@ logger.info("Train: %d (%d%%), Val: %d (%d%%), Test: %d (%d%%)", train_lines, tr
 
 output_directory.mkdir(parents=True)
 metadata.drop(columns="Unnamed: 0", errors="ignore").to_csv(output_directory / "metadata.csv", index=False)
+
+
+def get_line_count(language_code, split):
+    return metadata.query(f"language_code == '{language_code}' and file_name.str.startswith('{split}')").shape[0]
+
+for language in language_names:
+    for split in ["train", "val", "test"]:
+        logger.info("Found %d lines for the %s split of %s", get_line_count(language, split), split, language)
+        
 
 for dataset_directory in dataset_directories:
     for subdirectory in dataset_directory.glob("*/"):
@@ -82,23 +81,39 @@ train_perc = round(100 * train_lines / num_lines)
 val_perc = round(100 * val_lines / num_lines)
 test_perc = round(100 * test_lines / num_lines)
 
-language_code = args.input.name
-git_info = GitInfo.from_language_code(language_code)
-
+git_hashes = {
+    language_code: GitInfo.from_language_code(language_code).submodule_commit
+    for language_code in ["sma", "sme", "smj", "smn"]
+}
+commit = GitInfo.from_language_code("sma").commit
+    
 readme = (
     jinja2.Environment(loader=jinja2.FileSystemLoader(Path(__file__).parent))
-    .get_template("./templates/dataset_readme.md.j2")
+    .get_template("./templates/multilanguage_dataset_readme.md.j2")
     .render(
-        language=git_info.language._value_,
-        corpus_hash=git_info.submodule_commit,
         train_perc=train_perc,
         train_lines=train_lines,
         val_perc=val_perc,
         val_lines=val_lines,
         test_perc=test_perc,
         test_lines=test_lines,
-        repo_hash=git_info.commit,
-        language_code=language_code,
+        sma_hash=git_hashes["sma"],
+        sme_hash=git_hashes["sme"],
+        smj_hash=git_hashes["smj"],
+        smn_hash=git_hashes["smn"],
+        sma_train_lines=get_line_count("sma", "train"),
+        sma_val_lines=get_line_count("sma", "val"),
+        sma_test_lines=get_line_count("sma", "test"),
+        sme_train_lines=get_line_count("sme", "train"),
+        sme_val_lines=get_line_count("sme", "val"),
+        sme_test_lines=get_line_count("sme", "test"),
+        smj_train_lines=get_line_count("smj", "train"),
+        smj_val_lines=get_line_count("smj", "val"),
+        smj_test_lines=get_line_count("smj", "test"),
+        smn_train_lines=get_line_count("smn", "train"),
+        smn_val_lines=get_line_count("smn", "val"),
+        smn_test_lines=get_line_count("smn", "test"),
+        repo_hash=commit,
     )
 )
 
