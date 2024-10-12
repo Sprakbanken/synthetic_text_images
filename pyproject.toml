@@ -9,7 +9,7 @@ dependencies = [
     "pillow>=10.4.0",
     "fonttools>=4.53.1",
     "pandas>=2.2.2",
-    "augraphy @ file:///home/mariero/augraphy",
+    "augraphy @ https://github.com/MarieRoald/augraphy/archive/refs/heads/fix-ink-generator.zip",
     "opencv-python>=4.10.0.84",
     "colorspacious>=1.1.2",
     "datasets>=3.0.0",
