@@ -288,7 +288,7 @@ git_info = GitInfo.from_language_code(language_code)
 
 readme = (
     jinja2.Environment(loader=jinja2.FileSystemLoader(Path(__file__).parent))
-    .get_template("dataset_readme.md.j2")
+    .get_template("./templates/dataset_readme.md.j2")
     .render(
         language=language._value_,
         corpus_hash=git_info.submodule_commit,

@@ -42,7 +42,7 @@ test_perc = round(100 * test_lines / (train_lines + val_lines + test_lines))
 logger.info("Train: %d (%d%%), Val: %d (%d%%), Test: %d (%d%%)", train_lines, train_perc, val_lines, val_perc, test_lines, test_perc)
 
 output_directory.mkdir(parents=True)
-metadata.drop(columns="Unnamed: 0").to_csv(output_directory / "metadata.csv", index=False)
+metadata.drop(columns="Unnamed: 0", errors="ignore").to_csv(output_directory / "metadata.csv", index=False)
 
 for dataset_directory in dataset_directories:
     for subdirectory in dataset_directory.glob("*/"):
@@ -75,7 +75,7 @@ git_info = GitInfo.from_language_code(language_code)
 
 readme = (
     jinja2.Environment(loader=jinja2.FileSystemLoader(Path(__file__).parent))
-    .get_template("dataset_readme.md.j2")
+    .get_template("./templates/dataset_readme.md.j2")
     .render(
         language=git_info.language._value_,
         corpus_hash=git_info.submodule_commit,
